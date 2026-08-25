@@ -1,0 +1,3 @@
+[submodule "vendor/whiteboat-core"]
+	path = vendor/whiteboat-core
+	url = git@github.com:Circleyan/whiteboat-core.git
