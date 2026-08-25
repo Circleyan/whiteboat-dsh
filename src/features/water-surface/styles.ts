@@ -916,7 +916,6 @@ export const WATER_SURFACE_STYLES = String.raw`
 }
 
 .wb-dsh-native-plus,
-.wb-dsh-native-mic,
 .wb-dsh-native-send {
   display: grid;
   flex: none;
@@ -933,13 +932,6 @@ export const WATER_SURFACE_STYLES = String.raw`
   color: var(--wb-native-label);
 }
 
-.wb-dsh-native-mic {
-  width: 2.125rem;
-  height: 2.125rem;
-  background: transparent;
-  color: var(--wb-native-secondary);
-}
-
 .wb-dsh-native-send {
   width: 2.125rem;
   height: 2.125rem;
@@ -948,8 +940,7 @@ export const WATER_SURFACE_STYLES = String.raw`
   transform: translateY(-0.125rem);
 }
 
-.wb-dsh-native-plus:hover:not(:disabled),
-.wb-dsh-native-mic:hover:not(:disabled) {
+.wb-dsh-native-plus:hover:not(:disabled) {
   background: var(--wb-native-hover);
 }
 
@@ -958,7 +949,6 @@ export const WATER_SURFACE_STYLES = String.raw`
 }
 
 .wb-dsh-native-plus:disabled,
-.wb-dsh-native-mic:disabled,
 .wb-dsh-native-send:disabled,
 .wb-dsh-native-trigger:disabled,
 .wb-dsh-native-context-trigger:disabled {
@@ -967,7 +957,6 @@ export const WATER_SURFACE_STYLES = String.raw`
 }
 
 .wb-dsh-native-plus svg,
-.wb-dsh-native-mic svg,
 .wb-dsh-native-send svg {
   width: 1rem;
   height: 1rem;
@@ -1158,7 +1147,6 @@ export const WATER_SURFACE_STYLES = String.raw`
   }
 
   .wb-dsh-native-plus,
-  .wb-dsh-native-mic,
   .wb-dsh-native-send {
     width: 2.75rem;
     min-width: 2.75rem;

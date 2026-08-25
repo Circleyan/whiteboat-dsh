@@ -47,25 +47,29 @@ interface ObservableLike<T> {
   subscribe(listener: () => void): () => void;
 }
 
+const ABSENT_MODEL_DIRECTORY_SNAPSHOT = Object.freeze({
+  current: null,
+  groups: Object.freeze([]),
+  failures: Object.freeze([]),
+  status: "idle",
+  error: null,
+});
+
 const ABSENT_MODEL_DIRECTORY: ObservableLike<Record<string, unknown>> = {
-  getSnapshot: () => ({
-    current: null,
-    groups: [],
-    failures: [],
-    status: "idle",
-    error: null,
-  }),
+  getSnapshot: () => ABSENT_MODEL_DIRECTORY_SNAPSHOT,
   subscribe: () => () => {},
 };
 
+const ABSENT_AGENT_PRESET_SNAPSHOT = Object.freeze({
+  options: Object.freeze([]),
+  current: "",
+  error: null,
+  busy: false,
+  introduce: false,
+});
+
 const ABSENT_AGENT_PRESET: ObservableLike<Record<string, unknown>> = {
-  getSnapshot: () => ({
-    options: [],
-    current: "",
-    error: null,
-    busy: false,
-    introduce: false,
-  }),
+  getSnapshot: () => ABSENT_AGENT_PRESET_SNAPSHOT,
   subscribe: () => () => {},
 };
 
@@ -135,10 +139,8 @@ function WaterSurface({
   const open = useSurface((state) => state.open);
   const composerOpen = useSurface((state) => state.composerOpen);
   const preparing = useSurface((state) => state.preparing);
-  const surfaceStatus = useSurface((state) => ({
-    message: state.status,
-    error: state.statusError,
-  }));
+  const surfaceStatusMessage = useSurface((state) => state.status);
+  const surfaceStatusError = useSurface((state) => state.statusError);
   const composerX = useSurface((state) => state.composerX);
   const composerY = useSurface((state) => state.composerY);
   const composerMotion = useSurface((state) => state.composerMotion);
@@ -579,13 +581,13 @@ function WaterSurface({
       >
         {composerOpen && <span className="wb-dsh-water__composer-shadow" />}
       </div>
-      {(preparing || surfaceStatus.message) && (
+      {(preparing || surfaceStatusMessage) && (
         <div
           className="wb-dsh-water__status"
-          data-error={surfaceStatus.error || undefined}
+          data-error={surfaceStatusError || undefined}
           aria-live="polite"
         >
-          {surfaceStatus.message}
+          {surfaceStatusMessage}
         </div>
       )}
     </section>
