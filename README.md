@@ -10,28 +10,13 @@ The surface reuses Whiteboat's shared water field, boat, pointer navigation, mob
 
 ## Installation / 安装
 
-`whiteboat-dsh` 尚未发布到 npm。当前版本请从 GitHub 源码打包，再安装到 DSH 的 `web` profile。仓库仍为 Private 时，执行克隆的 GitHub 账号需要拥有仓库访问权限。
-
-准备环境：Node.js `>=20.19`、Git、pnpm，以及可访问 GitHub 的终端。
-
-### 1. 克隆并打包
+准备环境：Node.js `>=20.19` 与 pnpm。把正式包安装到 DSH 的 `web` profile：
 
 ```sh
-git clone --recurse-submodules https://github.com/Circleyan/whiteboat-dsh.git
-cd whiteboat-dsh
-npm install
-npm pack
+pnpm dlx @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web add whiteboat-dsh@0.1.0
 ```
 
-`npm pack` 会先运行测试和构建，成功后在仓库根目录生成 `whiteboat-dsh-0.1.0.tgz`。
-
-### 2. 安装到 DSH
-
-```sh
-pnpm dlx @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web add "$PWD/whiteboat-dsh-0.1.0.tgz"
-```
-
-### 3. 启动
+然后启动 DSH：
 
 ```sh
 pnpm dlx @deepseek-ai/dsh@0.1.1-rc.2 --profile web
@@ -42,27 +27,22 @@ DSH 会打开浏览器；也可以按终端打印的本地地址手动访问。�
 ### 更新
 
 ```sh
-git pull --ff-only
-git submodule update --init --recursive
-npm install
-npm pack
-pnpm dlx @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web remove whiteboat-dsh
-pnpm dlx @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web add "$PWD/whiteboat-dsh-0.1.0.tgz"
+pnpm dlx @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web add whiteboat-dsh@latest
 ```
 
-更新后重新启动 DSH。卸载时只需运行：
+更新后重新启动 DSH。卸载时运行：
 
 ```sh
 pnpm dlx @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web remove whiteboat-dsh
 ```
-
-待 npm 正式发布后，安装命令会简化为 `dsh plugin --profile web add whiteboat-dsh`；现在请不要使用这条尚未生效的命令。
 
 ## Mobile input
 
 The DSH water surface provides text input on mobile. It does not render a microphone control, request microphone permission, or call browser speech-recognition APIs. Features exposed by a user's operating-system keyboard are controlled by the operating system and browser, not by this package, and are not part of the DSH capability contract.
 
 ## Development
+
+Source development currently requires access to the pinned private `Circleyan/whiteboat-core` submodule. Runtime users installing from npm do not need that repository access.
 
 Clone with the shared capability submodule:
 
