@@ -9,8 +9,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Resolve pinned core revision
+        id: core
+        run: echo "sha=$(git rev-parse HEAD:vendor/whiteboat-core)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
         with:
-          submodules: recursive
+          repository: Circleyan/whiteboat-core
+          ref: ${{ steps.core.outputs.sha }}
+          path: vendor/whiteboat-core
           ssh-key: ${{ secrets.WHITEBOAT_CORE_DEPLOY_KEY }}
       - uses: actions/setup-node@v4
         with:
