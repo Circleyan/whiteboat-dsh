@@ -249,6 +249,30 @@ describe("shared Whiteboat water interaction", () => {
     expect(clientSource).toContain("prepareWaterSurfaceSession");
     expect(clientSource).not.toContain("document.querySelector");
     expect(clientSource).not.toContain("querySelectorAll");
+    expect(clientSource).toContain(
+      "const surfaceStatusMessage = useSurface((state) => state.status)",
+    );
+    expect(clientSource).toContain(
+      "const surfaceStatusError = useSurface((state) => state.statusError)",
+    );
+    expect(clientSource).not.toContain(
+      "const surfaceStatus = useSurface((state) => ({",
+    );
+    expect(clientSource).toContain(
+      "const ABSENT_MODEL_DIRECTORY_SNAPSHOT = Object.freeze({",
+    );
+    expect(clientSource).toContain(
+      "getSnapshot: () => ABSENT_MODEL_DIRECTORY_SNAPSHOT",
+    );
+    expect(clientSource).toContain(
+      "const ABSENT_AGENT_PRESET_SNAPSHOT = Object.freeze({",
+    );
+    expect(clientSource).toContain(
+      "getSnapshot: () => ABSENT_AGENT_PRESET_SNAPSHOT",
+    );
+    expect(clientSource).not.toMatch(
+      /const ABSENT_(?:MODEL_DIRECTORY|AGENT_PRESET):[^=]+=[\s\S]*?getSnapshot: \(\) => \(\{/u,
+    );
     expect(composerSource).toContain('aria-label="命令"');
     expect(composerSource).toContain("DSH_COMMAND_CHOICES");
     expect(composerSource).toContain('role="menu" aria-label="DSH 命令"');
@@ -273,6 +297,15 @@ describe("shared Whiteboat water interaction", () => {
     expect(composerSource).toContain("onFocus={dismissDropdowns}");
     expect(composerSource).toContain("if (!ready) return null");
     expect(composerSource).toContain("data-motion-phase={surface.composerMotion}");
+    expect(composerSource).not.toContain('whiteboat-core/speech-input');
+    expect(composerSource).not.toContain("SpeechRecognition");
+    expect(composerSource).not.toContain("webkitSpeechRecognition");
+    expect(composerSource).not.toContain("getUserMedia");
+    expect(composerSource).not.toContain("MediaRecorder");
+    expect(composerSource).not.toContain("wb-dsh-native-mic");
+    expect(composerSource).not.toContain('aria-label="语音输入"');
+    expect(composerSource).not.toContain("停止听写");
+    expect(stylesSource).not.toContain("wb-dsh-native-mic");
     expect(stylesSource).toContain(".wb-dsh-water-composer-layer");
     expect(stylesSource).not.toMatch(
       /\.wb-dsh-water\[data-composer-open\][\s\S]*?pointer-events:\s*none/u,

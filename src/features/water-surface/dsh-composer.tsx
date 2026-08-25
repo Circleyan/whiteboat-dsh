@@ -7,14 +7,6 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import {
-  appendIdeaSpeechTranscript,
-  extractFinalIdeaSpeechTranscript,
-  formatIdeaSpeechError,
-  getIdeaSpeechRecognitionConstructor,
-  requestIdeaMicrophonePermission,
-  type IdeaSpeechRecognitionLike,
-} from "whiteboat-core/speech-input";
 import type { WaterSurfaceSnapshot } from "./surface-store";
 
 type SelectorHook<T> = <S>(selector: (snapshot: T) => S) => S;
@@ -153,7 +145,7 @@ export interface DshWaterComposerProps {
   onAccepted(): void;
 }
 
-function Icon({ name }: { name: "arrow" | "chevron" | "folder" | "mic" | "plus" | "spark" }) {
+function Icon({ name }: { name: "arrow" | "chevron" | "folder" | "plus" | "spark" }) {
   if (name === "arrow") {
     return <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 15V2M2.5 7.5 8 2l5.5 5.5" /></svg>;
   }
@@ -162,9 +154,6 @@ function Icon({ name }: { name: "arrow" | "chevron" | "folder" | "mic" | "plus" 
   }
   if (name === "folder") {
     return <svg viewBox="0 0 18 18" aria-hidden="true"><path d="M2 4.5h5l1.4 1.7H16v7.3H2z" /></svg>;
-  }
-  if (name === "mic") {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M6.5 11.5a5.5 5.5 0 0 0 11 0M12 17v4M9 21h6" /></svg>;
   }
   if (name === "spark") {
     return <svg viewBox="0 0 18 18" aria-hidden="true"><path d="M9 2.5a5.7 5.7 0 0 0 0 11M9 2.5a5.7 5.7 0 0 1 0 11M3.5 6.2l11 5.6M3.5 11.8l11-5.6" /></svg>;
@@ -175,14 +164,6 @@ function Icon({ name }: { name: "arrow" | "chevron" | "folder" | "mic" | "plus" 
 function displayName(value: string): string {
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(value)) return value;
   return value.split("-").map((part) => part[0]?.toUpperCase() + part.slice(1)).join(" ");
-}
-
-function canUseDedicatedSpeechInput(): boolean {
-  return Boolean(
-    window.isSecureContext &&
-    window.matchMedia("(pointer: coarse)").matches &&
-    getIdeaSpeechRecognitionConstructor(window),
-  );
 }
 
 function AccessControl({
@@ -405,11 +386,7 @@ export function DshWaterComposer(props: DshWaterComposerProps) {
   const agentPreset = props.useAgentPresetSeat((state) => state);
   const permissions = props.useProjection<PermissionStateLike>("permissions", (value) => value) as PermissionStateLike | undefined;
   const [openMenu, setOpenMenu] = useState<ComposerMenu | null>(null);
-  const [listening, setListening] = useState(false);
-  const [speechStatus, setSpeechStatus] = useState("");
-  const [speechError, setSpeechError] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
-  const recognitionRef = useRef<IdeaSpeechRecognitionLike | null>(null);
   const submittedRef = useRef(false);
   const loadModelsRef = useRef(props.loadModels);
   const loadAgentPresetsRef = useRef(props.loadAgentPresets);
@@ -429,7 +406,6 @@ export function DshWaterComposer(props: DshWaterComposerProps) {
     props.disabled || props.blocked || session?.removed || !input ||
     !props.inputActions || !props.keyboard || machineBusy,
   );
-  const voiceAvailable = canUseDedicatedSpeechInput();
   const workspaceOpen = openMenu === "workspace";
   const presetOpen = openMenu === "preset";
   const commandOpen = openMenu === "command";
@@ -452,11 +428,6 @@ export function DshWaterComposer(props: DshWaterComposerProps) {
     submittedRef.current = false;
   }, [draft, input?.phase, props.onAccepted]);
 
-  useEffect(() => () => {
-    recognitionRef.current?.abort();
-    recognitionRef.current = null;
-  }, []);
-
   useEffect(() => {
     if (!ready) return;
     const onEscape = (event: KeyboardEvent) => {
@@ -474,63 +445,7 @@ export function DshWaterComposer(props: DshWaterComposerProps) {
   const submit = () => {
     if (disabled || !draft.trim() || !props.inputActions) return;
     submittedRef.current = true;
-    recognitionRef.current?.abort();
-    recognitionRef.current = null;
-    setListening(false);
     props.inputActions.submit();
-  };
-
-  const toggleSpeech = async () => {
-    if (disabled) return;
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      return;
-    }
-    const permission = await requestIdeaMicrophonePermission(navigator);
-    if (permission !== "granted") {
-      setSpeechError(true);
-      setSpeechStatus(formatIdeaSpeechError(permission, {
-        hostLabel: "浏览器",
-        surfaceLabel: "水面",
-      }));
-      return;
-    }
-    const Recognition = getIdeaSpeechRecognitionConstructor(window);
-    if (!Recognition) return;
-    const recognition = new Recognition();
-    recognition.lang = navigator.language || "zh-CN";
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognition.onresult = (event) => {
-      const transcript = extractFinalIdeaSpeechTranscript(event);
-      if (!transcript) return;
-      const next = appendIdeaSpeechTranscript(props.keyboard?.snapshot.draft ?? draft, transcript);
-      props.keyboard?.setDraft(next);
-      props.keyboard?.track(next, next.length);
-    };
-    recognition.onerror = (event) => {
-      if (recognitionRef.current !== recognition) return;
-      recognitionRef.current = null;
-      setListening(false);
-      setSpeechError(true);
-      setSpeechStatus(formatIdeaSpeechError(event.error, {
-        microphoneGranted: true,
-        hostLabel: "浏览器",
-        surfaceLabel: "水面",
-      }));
-    };
-    recognition.onend = () => {
-      if (recognitionRef.current !== recognition) return;
-      recognitionRef.current = null;
-      setListening(false);
-      setSpeechStatus("");
-    };
-    recognitionRef.current = recognition;
-    setListening(true);
-    setSpeechError(false);
-    setSpeechStatus("正在听…");
-    recognition.start();
   };
 
   return createPortal((
@@ -688,16 +603,6 @@ export function DshWaterComposer(props: DshWaterComposerProps) {
           </div>
           <div className="wb-dsh-native-trailing">
             {props.rightItems}
-            {voiceAvailable && (
-              <button
-                type="button"
-                className="wb-dsh-native-mic"
-                aria-label={listening ? "停止听写" : "语音输入"}
-                aria-pressed={listening}
-                disabled={disabled}
-                onClick={() => void toggleSpeech()}
-              ><Icon name="mic" /></button>
-            )}
             <ModelControl
               state={model}
               disabled={disabled}
@@ -716,13 +621,13 @@ export function DshWaterComposer(props: DshWaterComposerProps) {
           </div>
         </div>
       </div>
-      {(notice?.text || session?.promptError?.error?.message || agentPreset.error || speechStatus) && (
+      {(notice?.text || session?.promptError?.error?.message || agentPreset.error) && (
         <div
           className="wb-dsh-native-status"
-          data-error={notice?.level === "error" || Boolean(session?.promptError) || Boolean(agentPreset.error) || speechError || undefined}
+          data-error={notice?.level === "error" || Boolean(session?.promptError) || Boolean(agentPreset.error) || undefined}
           role="status"
         >
-          {speechStatus || notice?.text || session?.promptError?.error?.message || agentPreset.error}
+          {notice?.text || session?.promptError?.error?.message || agentPreset.error}
         </div>
       )}
     </div>
