@@ -10,10 +10,10 @@ The surface reuses Whiteboat's shared water field, boat, pointer navigation, mob
 
 ## Installation / 安装
 
-准备环境：Node.js `>=20.19` 与 pnpm。把正式包安装到 DSH 的 `web` profile：
+准备环境：Node.js `>=20.19` 与 pnpm。直接把 GitHub Release 中的预构建包安装到 DSH 的 `web` profile：
 
 ```sh
-pnpm dlx @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web add whiteboat-dsh@0.1.0
+pnpm dlx @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web add https://github.com/Circleyan/whiteboat-dsh/releases/download/v0.1.0/whiteboat-dsh-0.1.0.tgz
 ```
 
 然后启动 DSH：
@@ -26,11 +26,9 @@ DSH 会打开浏览器；也可以按终端打印的本地地址手动访问。�
 
 ### 更新
 
-```sh
-pnpm dlx @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web add whiteboat-dsh@latest
-```
+从 [GitHub Releases](https://github.com/Circleyan/whiteboat-dsh/releases) 选择新版本，并用对应 tarball URL 再次执行 `plugin --profile web add`。更新后重新启动 DSH。
 
-更新后重新启动 DSH。卸载时运行：
+卸载时运行：
 
 ```sh
 pnpm dlx @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web remove whiteboat-dsh
@@ -42,7 +40,7 @@ The DSH water surface provides text input on mobile. It does not render a microp
 
 ## Development
 
-Source development currently requires access to the pinned private `Circleyan/whiteboat-core` submodule. Runtime users installing from npm do not need that repository access.
+Source development currently requires access to the pinned private `Circleyan/whiteboat-core` submodule. Runtime users installing the prebuilt GitHub Release do not need that repository access.
 
 Clone with the shared capability submodule:
 
@@ -55,7 +53,7 @@ npm run build
 npm pack
 ```
 
-`npm install` builds the exact `whiteboat-core` submodule revision before DSH tests or bundling. The published DSH client bundle contains the required core code and has no runtime dependency on the private submodule.
+`npm install` builds the exact `whiteboat-core` submodule revision before DSH tests or bundling. The released DSH client bundle contains the required core code and has no runtime dependency on the private submodule.
 
 The current compatibility target is `@deepseek-ai/dsh` `0.1.1-rc.2`. DSH is still in developer preview, so host compatibility is verified independently for every release.
 
