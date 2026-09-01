@@ -1,0 +1,145 @@
+name: Release DSH
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version from package.json, without the leading v
+        required: true
+        type: string
+      prerelease:
+        description: Mark the GitHub Release as a prerelease
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: whiteboat-dsh-release
+  cancel-in-progress: false
+
+jobs:
+  package:
+    name: Verify and package
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      release_sha: ${{ steps.release.outputs.release_sha }}
+      tag: ${{ steps.release.outputs.tag }}
+      tarball: ${{ steps.pack.outputs.tarball }}
+    steps:
+      - name: Require main branch
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "Release DSH must be dispatched from main; got $GITHUB_REF" >&2
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate release identity
+        id: release
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid version: $VERSION" >&2
+            exit 1
+          fi
+          PACKAGE_VERSION="$(node -p 'require("./package.json").version')"
+          if [ "$PACKAGE_VERSION" != "$VERSION" ]; then
+            echo "package.json is $PACKAGE_VERSION but the requested release is $VERSION" >&2
+            exit 1
+          fi
+          TAG="v$VERSION"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag already exists: $TAG" >&2
+            exit 1
+          fi
+          echo "release_sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+      - name: Resolve pinned core revision
+        id: core
+        run: echo "sha=$(git rev-parse HEAD:vendor/whiteboat-core)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: Circleyan/whiteboat-core
+          ref: ${{ steps.core.outputs.sha }}
+          path: vendor/whiteboat-core
+          ssh-key: ${{ secrets.WHITEBOAT_CORE_DEPLOY_KEY }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Build release tarball
+        id: pack
+        run: |
+          set -euo pipefail
+          TARBALL="whiteboat-dsh-${{ inputs.version }}.tgz"
+          test ! -e "$TARBALL"
+          npm pack --ignore-scripts
+          test -f "$TARBALL"
+          echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
+          sha256sum "$TARBALL"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: whiteboat-dsh-${{ inputs.version }}
+          path: ${{ steps.pack.outputs.tarball }}
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    name: Create GitHub Release
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: write
+    environment: dsh-release
+    steps:
+      - name: Require configured environment gate
+        env:
+          RELEASE_GATE: ${{ vars.DSH_RELEASE_GATE }}
+        run: |
+          if [ "$RELEASE_GATE" != "enabled" ]; then
+            echo "dsh-release must define DSH_RELEASE_GATE=enabled before publishing" >&2
+            exit 1
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: whiteboat-dsh-${{ inputs.version }}
+      - name: Publish immutable GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ needs.package.outputs.release_sha }}
+          TAG: ${{ needs.package.outputs.tag }}
+          TARBALL: ${{ needs.package.outputs.tarball }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          set -euo pipefail
+          FLAGS=(
+            --repo "$GITHUB_REPOSITORY"
+            --target "$RELEASE_SHA"
+            --title "Whiteboat DSH $TAG"
+            --generate-notes
+          )
+          if [ "$PRERELEASE" = "true" ]; then
+            FLAGS+=(--prerelease)
+          fi
+          gh release create "$TAG" "$TARBALL#Whiteboat DSH package" "${FLAGS[@]}"
+          RELEASE_URL="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json url --jq .url)"
+          {
+            echo "## Whiteboat DSH released"
+            echo
+            echo "- Release: $RELEASE_URL"
+            echo "- Source: $RELEASE_SHA"
+            echo "- Package: $TARBALL"
+            echo "- npm: not published"
+          } >> "$GITHUB_STEP_SUMMARY"
