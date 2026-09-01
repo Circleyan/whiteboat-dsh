@@ -14,7 +14,7 @@ on:
         type: boolean
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: whiteboat-dsh-release
@@ -99,6 +99,9 @@ jobs:
     needs: package
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: write
     environment: dsh-release
     steps:
       - name: Require configured environment gate
