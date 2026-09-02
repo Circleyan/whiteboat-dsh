@@ -55,6 +55,8 @@ npm pack
 
 `npm install` builds the exact `whiteboat-core` submodule revision before DSH tests or bundling. The released DSH client bundle contains the required core code and has no runtime dependency on the private submodule.
 
+The migration baseline pins `whiteboat-core@8bdb5bf`, which owns the shared non-integral-height water wrapping fix and the common boat-speed normalization contract. Host installation and runtime acceptance remain independent from that core proof.
+
 The current compatibility target is `@deepseek-ai/dsh` `0.1.1-rc.2`. DSH is still in developer preview, so host compatibility is verified independently for every release.
 
 ## Roadmap boundary
