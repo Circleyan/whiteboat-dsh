@@ -28,6 +28,7 @@
         "@deepseek-ai/dsh-client-ui-conversation",
         "@deepseek-ai/dsh-client-ui-layout",
         "@deepseek-ai/dsh-client-ui-model-selection",
+        "@deepseek-ai/dsh-client-ui-settings",
         "@deepseek-ai/dsh-client-ui-sidebar"
       ],
       "platform": "web"
@@ -61,22 +62,32 @@
   },
   "homepage": "https://github.com/Circleyan/whiteboat-dsh#readme",
   "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
     "@deepseek-ai/dsh-client-runtime": "0.1.1-rc.2",
     "@deepseek-ai/dsh-client-ui-agent-preset": "0.1.1-rc.2",
     "@deepseek-ai/dsh-client-ui-conversation": "0.1.1-rc.2",
     "@deepseek-ai/dsh-client-ui-layout": "0.1.1-rc.2",
     "@deepseek-ai/dsh-client-ui-model-selection": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-settings": "0.1.1-rc.2",
     "@deepseek-ai/dsh-client-ui-sidebar": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-settings": "0.1.1-rc.2",
     "react-dom": "^18.2.0"
   },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.1"
+  },
   "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
     "@deepseek-ai/dsh-client-runtime": "0.1.1-rc.2",
     "@deepseek-ai/dsh-client-ui-agent-preset": "0.1.1-rc.2",
     "@deepseek-ai/dsh-client-ui-conversation": "0.1.1-rc.2",
     "@deepseek-ai/dsh-client-ui-layout": "0.1.1-rc.2",
     "@deepseek-ai/dsh-client-ui-model-selection": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-settings": "0.1.1-rc.2",
     "@deepseek-ai/dsh-client-ui-sidebar": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-settings": "0.1.1-rc.2",
     "@types/react": "~18.3.1",
+    "@types/react-dom": "~18.3.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "tsdown": "0.21.3",

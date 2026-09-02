@@ -1,6 +1,7 @@
 export const WATER_SURFACE_STYLES = String.raw`
 .wb-dsh-water,
-.wb-dsh-water-entry {
+.wb-dsh-water-entry,
+.wb-dsh-settings {
   /* Foundation tokens */
   --wb-f-color-paper: #f7f9f8;
   --wb-f-color-ink: #17201d;
@@ -1098,6 +1099,82 @@ export const WATER_SURFACE_STYLES = String.raw`
 
 .wb-dsh-native-status[data-error="true"] {
   color: var(--wb-native-error);
+}
+
+.wb-dsh-settings {
+  display: grid;
+  gap: var(--wb-f-space-06);
+  max-width: 42rem;
+  color: var(--wb-color-text-primary);
+  font-family: var(--wb-f-font-sans);
+}
+
+.wb-dsh-settings__header,
+.wb-dsh-settings__row,
+.wb-dsh-settings__copy {
+  display: grid;
+  gap: var(--wb-f-space-03);
+}
+
+.wb-dsh-settings__header h2,
+.wb-dsh-settings__header p,
+.wb-dsh-settings__row p {
+  margin: 0;
+}
+
+.wb-dsh-settings__eyebrow {
+  color: var(--wb-color-text-secondary);
+  font-size: var(--wb-type-label-size);
+  font-weight: var(--wb-f-weight-medium);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.wb-dsh-settings__header > p:last-child,
+.wb-dsh-settings__copy span,
+.wb-dsh-settings__status {
+  color: var(--wb-color-text-secondary);
+  line-height: var(--wb-type-body-line);
+}
+
+.wb-dsh-settings__row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  padding: var(--wb-f-space-05);
+  border: var(--wb-f-border) solid var(--wb-color-border-subtle);
+  border-radius: var(--wb-f-radius-md);
+  background: var(--wb-color-layer-01);
+}
+
+.wb-dsh-settings__copy label {
+  font-weight: var(--wb-f-weight-medium);
+}
+
+.wb-dsh-settings__copy span,
+.wb-dsh-settings__status {
+  font-size: var(--wb-type-label-size);
+}
+
+.wb-dsh-settings__value {
+  min-width: 3.5rem;
+  color: var(--wb-color-text-primary);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.wb-dsh-settings input[type="range"] {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-height: var(--wb-touch-target);
+  accent-color: var(--wb-color-interactive);
+}
+
+.wb-dsh-settings__status {
+  grid-column: 1 / -1;
+}
+
+.wb-dsh-settings__status[data-error="true"] {
+  color: var(--wb-color-support-error);
 }
 
 @media (max-width: 47.99rem), (pointer: coarse) {

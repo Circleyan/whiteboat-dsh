@@ -16,6 +16,12 @@ import {
   DSH_COMPOSER_EXIT_DURATION_MS,
   WaterSurfaceStore,
 } from "../src/features/water-surface/surface-store";
+import {
+  DEFAULT_WHITEBOAT_DSH_SETTINGS,
+  DSH_BOAT_FOLLOW_SPEED_LIMITS,
+  decodeWhiteboatDshSettings,
+  normalizeDshBoatFollowSpeed,
+} from "../src/features/water-surface/settings";
 
 describe("shared Whiteboat water interaction", () => {
   it("follows a fine pointer only before the composer opens", () => {
@@ -44,6 +50,24 @@ describe("shared Whiteboat water interaction", () => {
     expect(step.boat.x).toBeGreaterThan(100);
     expect(step.boat.x).toBeLessThanOrEqual(109);
     expect(step.boat.y).toBe(100);
+  });
+
+  it("normalizes the shared DSH boat follow-speed preference", () => {
+    expect(DSH_BOAT_FOLLOW_SPEED_LIMITS).toEqual({
+      min: 0.5,
+      max: 2,
+      step: 0.05,
+      defaultValue: 1,
+    });
+    expect(DEFAULT_WHITEBOAT_DSH_SETTINGS).toEqual({ boatFollowSpeed: 1 });
+    expect(normalizeDshBoatFollowSpeed(undefined)).toBe(1);
+    expect(normalizeDshBoatFollowSpeed(0.49)).toBe(0.5);
+    expect(normalizeDshBoatFollowSpeed(1.26)).toBe(1.25);
+    expect(normalizeDshBoatFollowSpeed(2.1)).toBe(2);
+    expect(decodeWhiteboatDshSettings({ boatFollowSpeed: 1.74 })).toEqual({
+      boatFollowSpeed: 1.75,
+    });
+    expect(decodeWhiteboatDshSettings(null)).toBeUndefined();
   });
 
   it("keeps phone roaming in the shared bounded sampler", () => {
@@ -234,6 +258,16 @@ describe("shared Whiteboat water interaction", () => {
       fileURLToPath(new URL("../package.json", import.meta.url)),
       "utf8",
     );
+    const hostSource = readFileSync(
+      fileURLToPath(new URL("../src/index.ts", import.meta.url)),
+      "utf8",
+    );
+    const settingsPageSource = readFileSync(
+      fileURLToPath(
+        new URL("../src/features/water-surface/settings-page.tsx", import.meta.url),
+      ),
+      "utf8",
+    );
 
     expect(clientSource).toContain('ctx.slots.inject("conversation.input.model"');
     expect(clientSource).toContain("priority: -100");
@@ -246,6 +280,15 @@ describe("shared Whiteboat water interaction", () => {
     expect(packageSource).toContain('"@deepseek-ai/dsh-client-ui-conversation"');
     expect(packageSource).toContain('"@deepseek-ai/dsh-client-ui-model-selection"');
     expect(packageSource).toContain('"@deepseek-ai/dsh-client-ui-agent-preset"');
+    expect(packageSource).toContain('"@deepseek-ai/dsh-client-ui-settings"');
+    expect(clientSource).toContain('ctx.slots.inject("settings.section"');
+    expect(clientSource).toContain("ctx.settingsScope.bind<WhiteboatDshSettings>");
+    expect(clientSource).toContain("* boatFollowSpeed");
+    expect(hostSource).toContain("settingsContext.settings.register(");
+    expect(hostSource).toContain("settingsNamespace(WHITEBOAT_DSH_SETTINGS_NAMESPACE)");
+    expect(settingsPageSource).toContain("小船跟随速度");
+    expect(settingsPageSource).toContain('type="range"');
+    expect(stylesSource).toContain(".wb-dsh-settings__row");
     expect(clientSource).toContain("prepareWaterSurfaceSession");
     expect(clientSource).not.toContain("document.querySelector");
     expect(clientSource).not.toContain("querySelectorAll");

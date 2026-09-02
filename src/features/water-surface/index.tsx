@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import type { SettingsScope } from "@deepseek-ai/dsh-client-runtime/client";
 import {
   CanvasCreationWaterField,
   clampWaterValue,
@@ -14,6 +15,16 @@ import {
 import { CANVAS_CREATION_BOAT_ASSETS } from "whiteboat-core/boat-assets";
 import { applyCanvasCreationCelestialProjection } from "whiteboat-core/projection";
 import { DshWaterComposer } from "./dsh-composer";
+import {
+  DshWaterSettingsPage,
+  useWhiteboatDshSettings,
+} from "./settings-page";
+import {
+  WHITEBOAT_DSH_SETTINGS_NAMESPACE,
+  decodeWhiteboatDshSettings,
+  normalizeDshBoatFollowSpeed,
+  type WhiteboatDshSettings,
+} from "./settings";
 import { WATER_SURFACE_STYLES } from "./styles";
 import { WaterSurfaceStore, type WaterSurfaceSnapshot } from "./surface-store";
 import {
@@ -75,11 +86,18 @@ const ABSENT_AGENT_PRESET: ObservableLike<Record<string, unknown>> = {
 
 interface ClientContextLike extends WaterSurfaceRuntime {
   slots: SlotsLike;
+  settingsScope: {
+    bind<T>(spec: {
+      namespace: string;
+      decode?: (section: unknown) => T | undefined;
+    }): SettingsScope<T>;
+  };
   effect(effect: () => void | (() => void), label?: string): void;
 }
 
 interface SurfaceInjected {
   useSurface: SelectorHook<WaterSurfaceSnapshot>;
+  preferences: SettingsScope<WhiteboatDshSettings>;
   onClose(): void;
   onPrepareComposer(): Promise<void>;
   onHideComposer(): void;
@@ -130,12 +148,17 @@ function resolveDshWaterDeviceMode(): CanvasCreationEntryDeviceMode {
 
 function WaterSurface({
   useSurface,
+  preferences,
   onClose,
   onPrepareComposer,
   onHideComposer,
   onPlaceComposer,
   onRelocateComposer,
 }: SurfaceInjected) {
+  const preferencesSnapshot = useWhiteboatDshSettings(preferences);
+  const boatFollowSpeed = normalizeDshBoatFollowSpeed(
+    preferencesSnapshot.value?.boatFollowSpeed,
+  );
   const open = useSurface((state) => state.open);
   const composerOpen = useSurface((state) => state.composerOpen);
   const preparing = useSurface((state) => state.preparing);
@@ -343,7 +366,7 @@ function WaterSurface({
         sailBoatTo(
           sampleCanvasCreationPhoneRoamTarget(getPhoneRoamLimits(), {
             current: boat,
-            minimumTravel: Math.min(root.clientWidth, 420) * 0.22,
+            minimumTravel: Math.min(root!.clientWidth, 420) * 0.22,
           }),
           "roam",
         );
@@ -363,7 +386,7 @@ function WaterSurface({
         target: target.point,
         deltaSeconds: (timestamp - lastFrameAt) / 1000,
         reducedMotion: motionQuery.matches,
-        maximumSpeed: currentKind === "roam" ? 42 : undefined,
+        maximumSpeed: (currentKind === "roam" ? 42 : 180) * boatFollowSpeed,
         slowingDistance: currentKind === "roam" ? 56 : undefined,
       });
       lastFrameAt = timestamp;
@@ -520,6 +543,7 @@ function WaterSurface({
     };
   }, [
     boatEl,
+    boatFollowSpeed,
     canvas,
     composerWrap,
     onHideComposer,
@@ -611,10 +635,14 @@ function WaterSurfaceEntry({ wide, useSurface, onOpen }: EntryInjected) {
   );
 }
 
-export const inject = ["slots", "sessions", "workspaces"];
+export const inject = ["slots", "sessions", "workspaces", "settingsScope"];
 
 export function apply(ctx: ClientContextLike): void {
   const surface = new WaterSurfaceStore();
+  const preferences = ctx.settingsScope.bind<WhiteboatDshSettings>({
+    namespace: WHITEBOAT_DSH_SETTINGS_NAMESPACE,
+    decode: decodeWhiteboatDshSettings,
+  });
   let disposeComposerShadow: (() => void) | undefined;
   const callInject = (
     entry: StoredEntryLike | undefined,
@@ -745,6 +773,7 @@ export function apply(ctx: ClientContextLike): void {
     label: "水面",
     inject: () => ({
       hooks: { surface },
+      preferences,
       onClose: closeSurface,
       onPrepareComposer: prepareComposer,
       onHideComposer: surface.hideComposer,
@@ -763,4 +792,12 @@ export function apply(ctx: ClientContextLike): void {
       onOpen: openSurface,
     }),
   }, WaterSurfaceEntry as (props: never) => unknown));
+
+  ctx.slots.inject("settings.section", () => ctx.slots.register({
+    name: "settings.section",
+    id: "whiteboat-water-surface",
+    order: 40,
+    label: "白舟",
+    inject: () => ({ preferences }),
+  }, DshWaterSettingsPage as (props: never) => unknown));
 }
