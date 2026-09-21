@@ -17,7 +17,7 @@ The surface reuses Whiteboat's shared water field, boat, pointer navigation, mob
 准备环境：Node.js `>=20.19` 与 pnpm。直接把 GitHub Release 中的预构建包安装到 DSH 的 `web` profile：
 
 ```sh
-pnpm dlx @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web add https://github.com/Circleyan/whiteboat-dsh/releases/download/v0.1.0/whiteboat-dsh-0.1.0.tgz
+pnpm dlx @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web add https://github.com/Circleyan/whiteboat-dsh/releases/download/v0.1.1/whiteboat-dsh-0.1.1.tgz
 ```
 
 然后启动 DSH：
