@@ -10,10 +10,12 @@ export const DSH_BOAT_FOLLOW_SPEED_LIMITS =
 
 export interface WhiteboatDshSettings {
   boatFollowSpeed: number;
+  soundEnabled: boolean;
 }
 
 export const DEFAULT_WHITEBOAT_DSH_SETTINGS: WhiteboatDshSettings = Object.freeze({
   boatFollowSpeed: DSH_BOAT_FOLLOW_SPEED_LIMITS.defaultValue,
+  soundEnabled: true,
 });
 
 export function normalizeDshBoatFollowSpeed(
@@ -32,5 +34,6 @@ export function decodeWhiteboatDshSettings(
   const candidate = value as Partial<WhiteboatDshSettings>;
   return {
     boatFollowSpeed: normalizeDshBoatFollowSpeed(candidate.boatFollowSpeed),
+    soundEnabled: typeof candidate.soundEnabled === "boolean" ? candidate.soundEnabled : true,
   };
 }

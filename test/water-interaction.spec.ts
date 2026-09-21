@@ -59,14 +59,19 @@ describe("shared Whiteboat water interaction", () => {
       step: 0.05,
       defaultValue: 1,
     });
-    expect(DEFAULT_WHITEBOAT_DSH_SETTINGS).toEqual({ boatFollowSpeed: 1 });
+    expect(DEFAULT_WHITEBOAT_DSH_SETTINGS).toEqual({ boatFollowSpeed: 1, soundEnabled: true });
     expect(normalizeDshBoatFollowSpeed(undefined)).toBe(1);
     expect(normalizeDshBoatFollowSpeed(0.49)).toBe(0.5);
     expect(normalizeDshBoatFollowSpeed(1.26)).toBe(1.25);
     expect(normalizeDshBoatFollowSpeed(2.1)).toBe(2);
     expect(decodeWhiteboatDshSettings({ boatFollowSpeed: 1.74 })).toEqual({
       boatFollowSpeed: 1.75,
+      soundEnabled: true,
     });
+    expect(decodeWhiteboatDshSettings({ soundEnabled: false })).toEqual({
+      boatFollowSpeed: 1, soundEnabled: false,
+    });
+    expect(decodeWhiteboatDshSettings({ soundEnabled: "false" })?.soundEnabled).toBe(true);
     expect(decodeWhiteboatDshSettings(null)).toBeUndefined();
   });
 
