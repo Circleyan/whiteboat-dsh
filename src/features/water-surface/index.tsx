@@ -14,6 +14,8 @@ import {
 } from "whiteboat-core/navigation";
 import { CANVAS_CREATION_BOAT_ASSETS } from "whiteboat-core/boat-assets";
 import { applyCanvasCreationCelestialProjection } from "whiteboat-core/projection";
+import type { WhiteboatSoundState } from "whiteboat-core/boat-water-sound";
+import { mountDshWaterAudio } from "./audio";
 import { DshWaterComposer } from "./dsh-composer";
 import {
   DshWaterSettingsPage,
@@ -111,7 +113,10 @@ interface EntryInjected {
   onOpen(): void;
 }
 
-function Icon({ name }: { name: "close" | "water" }) {
+function Icon({ name }: { name: "close" | "water" | "sound" | "muted" }) {
+  if (name === "sound" || name === "muted") {
+    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4z" />{name === "sound" ? <path d="M15 8a6 6 0 010 8M18 5a10 10 0 010 14" /> : <path d="M16 9l5 6m0-6l-5 6" />}</svg>;
+  }
   if (name === "close") {
     return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" /></svg>;
   }
@@ -175,6 +180,30 @@ function WaterSurface({
   const [deviceMode, setDeviceMode] = useState<CanvasCreationEntryDeviceMode>(
     resolveDshWaterDeviceMode,
   );
+  const audioRef = useRef<ReturnType<typeof mountDshWaterAudio> | null>(null);
+  const soundEnabled = preferencesSnapshot.status === "ready" &&
+    (preferencesSnapshot.value?.soundEnabled ?? true);
+  const soundWritable = preferencesSnapshot.status === "ready" && preferencesSnapshot.writable;
+  const [soundState, setSoundState] = useState<WhiteboatSoundState>("waiting");
+  const [soundSaving, setSoundSaving] = useState(false);
+  const [soundError, setSoundError] = useState(false);
+  const toggleSound = async () => {
+    if (!soundWritable || soundSaving) return;
+    const next = !soundEnabled;
+    audioRef.current?.setEnabled(next);
+    setSoundSaving(true);
+    setSoundError(false);
+    try { await preferences.set("soundEnabled", next); }
+    catch { audioRef.current?.setEnabled(soundEnabled); setSoundError(true); }
+    finally { setSoundSaving(false); }
+  };
+  useEffect(() => {
+    if (!open || !root) return;
+    const audio = mountDshWaterAudio(root, false, setSoundState);
+    audioRef.current = audio;
+    return () => { audioRef.current = null; audio.destroy(); };
+  }, [open, root]);
+  useEffect(() => { audioRef.current?.setEnabled(soundEnabled); }, [soundEnabled, open, root]);
   const composerOpenRef = useRef(composerOpen);
   const preparingRef = useRef(preparing);
 
@@ -274,6 +303,7 @@ function WaterSurface({
         `${boat.heading + Math.PI * 0.5}rad`,
       );
       water.setBoat(boat);
+      audioRef.current?.setBoatSpeed(boat.speed);
     };
 
     const resolveComposerPosition = () => {
@@ -423,7 +453,7 @@ function WaterSurface({
       const eventTarget = event.target instanceof Element ? event.target : null;
       if (
         eventTarget?.closest(
-          ".wb-dsh-water__boat, .wb-dsh-water__composer-wrap, .wb-dsh-water__close",
+          ".wb-dsh-water__boat, .wb-dsh-water__composer-wrap, .wb-dsh-water__close, .wb-dsh-water__sound",
         )
       ) {
         pointerEl.dataset.visible = "false";
@@ -450,7 +480,7 @@ function WaterSurface({
 
     const onSurfaceClick = (event: MouseEvent) => {
       const eventTarget = event.target instanceof Element ? event.target : null;
-      if (preparingRef.current || eventTarget?.closest(".wb-dsh-water__close, .wb-dsh-water__composer-wrap")) {
+      if (preparingRef.current || eventTarget?.closest(".wb-dsh-water__close, .wb-dsh-water__sound, .wb-dsh-water__composer-wrap")) {
         return;
       }
       if (eventTarget?.closest(".wb-dsh-water__boat")) {
@@ -588,6 +618,18 @@ function WaterSurface({
           <img className="wb-dsh-water__boat-window" src={CANVAS_CREATION_BOAT_ASSETS.boatWindow} alt="" />
         </span>
       </button>
+      <button type="button" className="wb-dsh-water__sound wb-dsh-water__icon-button"
+        onClick={() => void toggleSound()} disabled={!soundWritable || soundSaving}
+        aria-label={soundEnabled ? "关闭水面音效" : "开启水面音效"}
+        aria-pressed={soundEnabled} title={soundEnabled ? "关闭水面音效" : "开启水面音效"}>
+        <Icon name={soundEnabled ? "sound" : "muted"} />
+      </button>
+      {(soundError || soundState === "error" || (soundEnabled && soundState === "waiting")) && (
+        <span className="wb-dsh-water__sound-status" role="status">
+          {soundError ? "音效设置没有保存，请再试一次。" : soundState === "error"
+            ? "水声暂时不可用，你可以继续使用水面。" : "轻触或按键，让水声响起。"}
+        </span>
+      )}
       <button type="button" className="wb-dsh-water__close" onClick={onClose} aria-label="回到 DSH">
         <Icon name="close" />
       </button>

@@ -14,6 +14,7 @@ export * from "./design-system/direct-use";
 export interface Config extends WhiteboatDshSettings {}
 
 export const Config = z.object({
+  soundEnabled: z.boolean().default(true).description("水面音效"),
   boatFollowSpeed: z.number()
     .min(DSH_BOAT_FOLLOW_SPEED_LIMITS.min)
     .max(DSH_BOAT_FOLLOW_SPEED_LIMITS.max)
@@ -28,6 +29,7 @@ export function apply(
 ): void {
   const base: WhiteboatDshSettings = {
     boatFollowSpeed: normalizeDshBoatFollowSpeed(config.boatFollowSpeed),
+    soundEnabled: typeof config.soundEnabled === "boolean" ? config.soundEnabled : true,
   };
   ctx.inject(["settings"], (settingsContext) => {
     settingsContext.settings.register(

@@ -262,7 +262,8 @@ export const WATER_SURFACE_STYLES = String.raw`
     border-color var(--wb-f-duration-fast) var(--wb-f-ease-state);
 }
 
-.wb-dsh-water__close {
+.wb-dsh-water__close,
+.wb-dsh-water__sound {
   position: absolute;
   z-index: 4;
   top: var(--wb-surface-pad-top);
@@ -272,6 +273,21 @@ export const WATER_SURFACE_STYLES = String.raw`
   backdrop-filter: blur(0.9rem);
 }
 
+.wb-dsh-water__sound {
+  right: calc(var(--wb-surface-pad-right) + var(--wb-touch-target) + var(--wb-f-space-03));
+}
+.wb-dsh-water__sound-status {
+  position: absolute;
+  z-index: 4;
+  top: calc(var(--wb-surface-pad-top) + var(--wb-touch-target) + 0.5rem);
+  right: var(--wb-surface-pad-right);
+  max-width: calc(100% - 3rem);
+  font-size: 0.8125rem;
+  color: var(--wb-color-text-primary);
+  pointer-events: none;
+}
+.wb-dsh-water__sound:disabled { opacity: 0.5; cursor: default; }
+.wb-dsh-water__sound svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; }
 .wb-dsh-water__composer-wrap {
   position: absolute;
   z-index: 3;

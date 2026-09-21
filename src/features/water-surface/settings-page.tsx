@@ -38,6 +38,8 @@ export function DshWaterSettingsPage({
   const snapshot = useWhiteboatDshSettings(preferences);
   const [draft, setDraft] = useState<number | undefined>();
   const [writeError, setWriteError] = useState(false);
+  const [soundError, setSoundError] = useState(false);
+  const [soundSaving, setSoundSaving] = useState(false);
   const writeGeneration = useRef(0);
   const resolvedSpeed = normalizeDshBoatFollowSpeed(
     snapshot.value?.boatFollowSpeed,
@@ -76,8 +78,24 @@ export function DshWaterSettingsPage({
       <header className="wb-dsh-settings__header">
         <p className="wb-dsh-settings__eyebrow">白舟</p>
         <h2 id="wb-dsh-settings-title">水面</h2>
-        <p>调整小船在水面上的航行手感，不改变水面、投影或会话语义。</p>
+        <p>调整小船的航行手感和轻柔水声。</p>
       </header>
+      <div className="wb-dsh-settings__row">
+        <div className="wb-dsh-settings__copy">
+          <label htmlFor="wb-dsh-water-sound">水面音效</label>
+          <span>让小船航行带起轻柔水声，关闭后保持安静。</span>
+        </div>
+        <input id="wb-dsh-water-sound" type="checkbox"
+          checked={snapshot.value?.soundEnabled ?? true} disabled={!writable || soundSaving}
+          onChange={async (event) => {
+            const enabled = event.currentTarget.checked;
+            setSoundSaving(true); setSoundError(false);
+            try { await preferences.set("soundEnabled", enabled); }
+            catch { setSoundError(true); }
+            finally { setSoundSaving(false); }
+          }} />
+        {soundError && <p role="status">音效设置没有保存，请再试一次。</p>}
+      </div>
       <div className="wb-dsh-settings__row">
         <div className="wb-dsh-settings__copy">
           <label htmlFor="wb-dsh-boat-follow-speed">小船跟随速度</label>
