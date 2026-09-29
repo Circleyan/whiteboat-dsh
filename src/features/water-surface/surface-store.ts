@@ -1,5 +1,6 @@
 export const DSH_COMPOSER_ENTER_DURATION_MS = 420;
 export const DSH_COMPOSER_EXIT_DURATION_MS = 320;
+export const DSH_CONVERSATION_RIPPLE_DURATION_MS = 2660;
 
 export type DshComposerMotionPhase = "entering" | "visible" | "exiting";
 
@@ -13,11 +14,15 @@ function resolveComposerMotionDuration(duration: number): number {
 export interface WaterSurfaceSnapshot {
   open: boolean;
   composerOpen: boolean;
+  /** The composer is leaving for good (not relocating); the water refocuses out now. */
+  composerClosing: boolean;
   preparing: boolean;
   preparedSessionId: string | undefined;
   composerX: number | undefined;
   composerY: number | undefined;
   composerMotion: DshComposerMotionPhase;
+  conversationRipple: boolean;
+  conversationRippleCenter: { x: number; y: number } | undefined;
   status: string;
   statusError: boolean;
 }
@@ -27,11 +32,14 @@ export class WaterSurfaceStore {
   private snapshot: WaterSurfaceSnapshot = {
     open: true,
     composerOpen: false,
+    composerClosing: false,
     preparing: false,
     preparedSessionId: undefined,
     composerX: undefined,
     composerY: undefined,
     composerMotion: "visible",
+    conversationRipple: false,
+    conversationRippleCenter: undefined,
     status: "",
     statusError: false,
   };
@@ -40,6 +48,7 @@ export class WaterSurfaceStore {
   private exitTimer: ReturnType<typeof setTimeout> | undefined;
   private relocationTimer: ReturnType<typeof setTimeout> | undefined;
   private pendingPlacement: { x: number; y: number } | undefined;
+  private conversationRippleTimer: ReturnType<typeof setTimeout> | undefined;
 
   getSnapshot = (): WaterSurfaceSnapshot => this.snapshot;
 
@@ -51,10 +60,16 @@ export class WaterSurfaceStore {
   open = (): void => this.patch({ open: true });
   close = (): void => {
     this.clearMotionTimers();
+    if (this.conversationRippleTimer !== undefined) {
+      clearTimeout(this.conversationRippleTimer);
+      this.conversationRippleTimer = undefined;
+    }
     this.patch({
       open: false,
       composerOpen: false,
+      composerClosing: false,
       composerMotion: "visible",
+      conversationRipple: false,
       preparing: false,
       preparedSessionId: undefined,
       status: "",
@@ -62,8 +77,39 @@ export class WaterSurfaceStore {
     });
   };
 
+  /**
+   * The first DSH prompt is already owned by Session/Conversation at this point.
+   * Keep the water surface mounted long enough for a circular reveal centred on
+   * DSH's native Conversation column, then hand the screen back to DSH.
+   */
+  beginConversationRipple(
+    center: { x: number; y: number } | undefined,
+    onComplete: () => void,
+  ): void {
+    this.clearMotionTimers();
+    if (this.conversationRippleTimer !== undefined) {
+      clearTimeout(this.conversationRippleTimer);
+    }
+    this.patch({
+      composerOpen: false,
+      composerClosing: false,
+      composerMotion: "visible",
+      preparing: false,
+      conversationRipple: true,
+      conversationRippleCenter: center,
+      status: "",
+      statusError: false,
+    });
+    const duration = resolveComposerMotionDuration(DSH_CONVERSATION_RIPPLE_DURATION_MS);
+    this.conversationRippleTimer = setTimeout(() => {
+      this.conversationRippleTimer = undefined;
+      onComplete();
+    }, duration);
+  }
+
   beginPreparing = (): void => this.patch({
     composerOpen: false,
+    composerClosing: false,
     preparing: true,
     status: "正在准备 DSH 输入…",
     statusError: false,
@@ -73,6 +119,7 @@ export class WaterSurfaceStore {
     this.clearMotionTimers();
     this.patch({
       composerOpen: true,
+      composerClosing: false,
       composerMotion: "entering",
       preparing: false,
       preparedSessionId: sessionId,
@@ -87,13 +134,14 @@ export class WaterSurfaceStore {
     this.clearMotionTimers();
     this.patch({
       composerMotion: "exiting",
+      composerClosing: true,
       preparing: false,
       status: "",
       statusError: false,
     });
     this.exitTimer = setTimeout(() => {
       this.exitTimer = undefined;
-      this.patch({ composerOpen: false, composerMotion: "visible" });
+      this.patch({ composerOpen: false, composerClosing: false, composerMotion: "visible" });
     }, resolveComposerMotionDuration(DSH_COMPOSER_EXIT_DURATION_MS));
   };
 
@@ -102,6 +150,7 @@ export class WaterSurfaceStore {
     this.clearMotionTimers();
     this.patch({
       composerOpen: true,
+      composerClosing: false,
       composerMotion: "entering",
       preparing: false,
       status: "",
@@ -113,6 +162,7 @@ export class WaterSurfaceStore {
 
   failPreparing = (message: string): void => this.patch({
     composerOpen: false,
+    composerClosing: false,
     preparing: false,
     preparedSessionId: undefined,
     status: message,

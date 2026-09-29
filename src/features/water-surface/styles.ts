@@ -1,4 +1,10 @@
 export const WATER_SURFACE_STYLES = String.raw`
+@property --wb-conversation-ripple-radius {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
 .wb-dsh-water,
 .wb-dsh-water-entry,
 .wb-dsh-settings {
@@ -104,6 +110,14 @@ export const WATER_SURFACE_STYLES = String.raw`
   --wb-entry-wake-opacity-soft: 0.34;
   --wb-entry-wake-opacity-tail: 0.18;
   --wb-entry-water-visual-scale: 1;
+  /* Composer focus: clear area padding, three blur depths, release and the
+     faintest the far dashes recede to (1 disables the dash fade). */
+  --wb-entry-water-focus-padding: 96px;
+  --wb-entry-water-focus-blur-near: 1.5px;
+  --wb-entry-water-focus-blur-mid: 3px;
+  --wb-entry-water-focus-blur-far: 6px;
+  --wb-entry-water-focus-release-duration: 320ms;
+  --wb-entry-water-focus-dash-floor: 0.3;
   --wb-entry-water-top-inset: 0px;
   --wb-entry-water-top-ratio: 0;
   --wb-entry-boat-hit-size: 6.75rem;
@@ -112,15 +126,15 @@ export const WATER_SURFACE_STYLES = String.raw`
   --wb-entry-boat-shadow-width: 3.4962rem;
   --wb-entry-boat-shadow-height: 6.3116rem;
   --wb-entry-boat-heading: 0rad;
+  --wb-entry-boat-rim-offset-x: 0px;
+  --wb-entry-boat-rim-offset-y: -0.9px;
+  --wb-entry-boat-rim-angle: 117deg;
   --wb-entry-celestial-projection-angle: 27deg;
   --wb-entry-celestial-projection-counter-angle: -27deg;
   --wb-entry-celestial-projection-color: color-mix(in srgb, var(--wb-color-text-primary) 34%, transparent);
   --wb-entry-boat-projection-distance: 0.6875rem;
   --wb-entry-boat-projection-opacity: 0.22;
   --wb-entry-boat-projection-blur: 0.5rem;
-  --wb-entry-pointer-projection-distance: 0.25rem;
-  --wb-entry-pointer-projection-opacity: 0.14;
-  --wb-entry-pointer-projection-blur: 0.3125rem;
   --wb-entry-composer-projection-distance: 4.625rem;
   --wb-entry-composer-projection-opacity: 0.24;
   --wb-entry-composer-projection-blur: 1rem;
@@ -143,34 +157,177 @@ export const WATER_SURFACE_STYLES = String.raw`
   animation: wb-dsh-water-arrive var(--wb-f-duration-slow) var(--wb-f-ease-out) both;
 }
 
+/* After the first prompt is accepted, reveal DSH's native Conversation from
+   the centre of the native composer card. The water remains the only overlay;
+   the expanding circular hole lets the host Conversation become visible below. */
+.wb-dsh-water[data-conversation-ripple="true"] {
+  animation: wb-dsh-conversation-ripple 2660ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wb-dsh-water[data-conversation-ripple="true"] {
+    animation-duration: 1ms;
+  }
+}
+
 .wb-dsh-water__field {
   position: absolute;
   inset: 0;
+  z-index: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
 }
 
-.wb-dsh-water__pointer-shadow {
+/* The veil never animates opacity: Chromium drops backdrop-filter while an
+   opacity transition runs and then snaps the blur in when it ends. The surface
+   script writes the amount and clear area every frame from the boat's voyage,
+   so the blur never runs ahead of the boat and its wake. */
+.wb-dsh-water__focus-veil {
+  --wb-entry-water-focus-x: 0px;
+  --wb-entry-water-focus-y: 0px;
+  --wb-entry-water-focus-rx: 0px;
+  --wb-entry-water-focus-ry: 0px;
+  --wb-entry-water-focus-amount: 0;
   position: absolute;
+  inset: 0;
   z-index: 1;
-  display: block;
-  width: 1.75rem;
-  height: 0.75rem;
-  border-radius: var(--wb-f-radius-pill);
-  background: var(--wb-entry-projection-color);
-  opacity: 0;
+  visibility: hidden;
   pointer-events: none;
-  filter: blur(var(--wb-entry-pointer-projection-blur));
-  transform: translate(-50%, -50%)
-    rotate(var(--wb-entry-celestial-projection-angle))
-    translateY(var(--wb-entry-pointer-projection-distance))
-    rotate(var(--wb-entry-celestial-projection-counter-angle));
-  transition: opacity var(--wb-f-duration-fast) var(--wb-f-ease-out);
+  transition: visibility 0s linear var(--wb-entry-water-focus-release-duration);
 }
 
-.wb-dsh-water__pointer-shadow[data-visible="true"] {
-  opacity: var(--wb-entry-pointer-projection-opacity);
+.wb-dsh-water[data-water-focus="focused"] .wb-dsh-water__focus-veil {
+  visibility: visible;
+  transition: none;
+}
+
+/* Each layer starts farther out and blurs harder; stacked they read as one
+   continuous falloff. No colour wash: a near-background gradient quantises
+   into visible rings, so the dashes fade in the water field instead. */
+.wb-dsh-water__focus-layer {
+  position: absolute;
+  inset: 0;
+  display: block;
+  -webkit-mask-image: radial-gradient(
+    calc(var(--wb-entry-water-focus-rx) + var(--wb-entry-water-focus-padding))
+      calc(var(--wb-entry-water-focus-ry) + var(--wb-entry-water-focus-padding))
+      at var(--wb-entry-water-focus-x) var(--wb-entry-water-focus-y),
+    transparent var(--wb-entry-water-focus-from),
+    #000 var(--wb-entry-water-focus-to)
+  );
+  mask-image: radial-gradient(
+    calc(var(--wb-entry-water-focus-rx) + var(--wb-entry-water-focus-padding))
+      calc(var(--wb-entry-water-focus-ry) + var(--wb-entry-water-focus-padding))
+      at var(--wb-entry-water-focus-x) var(--wb-entry-water-focus-y),
+    transparent var(--wb-entry-water-focus-from),
+    #000 var(--wb-entry-water-focus-to)
+  );
+}
+
+.wb-dsh-water__focus-layer[data-layer="near"] {
+  --wb-entry-water-focus-from: 100%;
+  --wb-entry-water-focus-to: 160%;
+  -webkit-backdrop-filter: blur(calc(var(--wb-entry-water-focus-blur-near) * var(--wb-entry-water-focus-amount)));
+  backdrop-filter: blur(calc(var(--wb-entry-water-focus-blur-near) * var(--wb-entry-water-focus-amount)));
+}
+
+.wb-dsh-water__focus-layer[data-layer="mid"] {
+  --wb-entry-water-focus-from: 130%;
+  --wb-entry-water-focus-to: 220%;
+  -webkit-backdrop-filter: blur(calc(var(--wb-entry-water-focus-blur-mid) * var(--wb-entry-water-focus-amount)));
+  backdrop-filter: blur(calc(var(--wb-entry-water-focus-blur-mid) * var(--wb-entry-water-focus-amount)));
+}
+
+.wb-dsh-water__focus-layer[data-layer="far"] {
+  --wb-entry-water-focus-from: 170%;
+  --wb-entry-water-focus-to: 300%;
+  -webkit-backdrop-filter: blur(calc(var(--wb-entry-water-focus-blur-far) * var(--wb-entry-water-focus-amount)));
+  backdrop-filter: blur(calc(var(--wb-entry-water-focus-blur-far) * var(--wb-entry-water-focus-amount)));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wb-dsh-water__focus-veil {
+    transition: none;
+  }
+}
+
+/* Moonlit shallow water: the receiving water stays dark, while only
+   scattered existing ripples catch light. The host composer keeps its tokens. */
+body[data-ds-dark-theme] .wb-dsh-water {
+  /* Follow DSH's own dark surface: #151517 base, #232324 layer, #2c2c2e input. */
+  --wb-entry-night-deep: var(--dsw-alias-bg-base, #151517);
+  --wb-entry-night-mid: var(--dsw-alias-bg-layer-1, #232324);
+  --wb-entry-night-soft: var(--dsw-alias-bg-layer-2, #2c2c2e);
+  /* Long shadows stay deep; the cool light is reserved for the moonlit field. */
+  --wb-entry-celestial-projection-color: rgba(5, 8, 12, 0.84);
+  --wb-entry-water-line-quiet: color-mix(in srgb, var(--dsw-alias-label-primary, #f9fafb) 7%, transparent);
+  --wb-entry-water-line: color-mix(in srgb, var(--dsw-alias-label-primary, #f9fafb) 11%, transparent);
+  --wb-entry-water-line-strong: color-mix(in srgb, var(--dsw-alias-label-primary, #f9fafb) 17%, transparent);
+  background:
+    radial-gradient(ellipse at 50% 54%, color-mix(in srgb, var(--dsw-alias-state-business-primary, #679efe) 5%, transparent), transparent 45%),
+    radial-gradient(ellipse at 72% 18%, color-mix(in srgb, var(--dsw-alias-state-business-primary, #679efe) 3%, transparent), transparent 58%),
+    var(--wb-entry-night-deep);
+}
+
+body[data-ds-dark-theme] .wb-dsh-water::before,
+body[data-ds-dark-theme] .wb-dsh-water::after {
+  position: absolute;
+  inset: -18%;
+  z-index: 0;
+  display: block;
+  pointer-events: none;
+  content: "";
+}
+
+/* A cool, wide moon pool drifts slowly across the water. */
+body[data-ds-dark-theme] .wb-dsh-water::before {
+  background:
+    radial-gradient(
+      ellipse at 62% 38%,
+      color-mix(in srgb, var(--dsw-alias-state-business-primary, #679efe) 11%, transparent) 0%,
+      color-mix(in srgb, var(--dsw-alias-state-business-primary, #679efe) 6%, transparent) 23%,
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse at 31% 76%,
+      color-mix(in srgb, var(--dsw-alias-label-primary, #f9fafb) 4%, transparent),
+      transparent 42%
+    );
+  filter: blur(1.5rem);
+  opacity: 0.82;
+  transform: translate3d(-3%, -2%, 0) scale(1.04);
+  animation: wb-dsh-moonlight-drift 28s ease-in-out infinite alternate;
+}
+
+/* Soft, broad cloud banks pass over the moon pool and briefly mute it. */
+body[data-ds-dark-theme] .wb-dsh-water::after {
+  background:
+    radial-gradient(ellipse at 16% 34%, rgba(4, 7, 11, 0.48) 0 14%, transparent 48%),
+    radial-gradient(ellipse at 72% 22%, rgba(4, 7, 11, 0.38) 0 18%, transparent 52%),
+    radial-gradient(ellipse at 54% 78%, rgba(4, 7, 11, 0.34) 0 16%, transparent 46%);
+  filter: blur(2.25rem);
+  opacity: 0.76;
+  transform: translate3d(-12%, 1%, 0) scale(1.08);
+  animation: wb-dsh-cloud-cover 34s cubic-bezier(0.42, 0, 0.58, 1) infinite alternate;
+}
+
+body[data-ds-dark-theme] .wb-dsh-water__composer-shadow {
+  background: var(--wb-entry-projection-color);
+  opacity: 0.2;
+  filter: blur(calc(var(--wb-entry-composer-projection-blur) * 1.25));
+}
+
+body[data-ds-dark-theme] .wb-dsh-water__boat-body {
+  /* Keep the hull readable while the directional edge follows the moon. */
+  filter: brightness(0.72) saturate(0.32) contrast(0.94)
+    drop-shadow(var(--wb-entry-boat-rim-offset-x) var(--wb-entry-boat-rim-offset-y) 0 rgba(184, 211, 246, 0.48))
+    drop-shadow(var(--wb-entry-boat-rim-offset-x) var(--wb-entry-boat-rim-offset-y) 1px rgba(147, 185, 235, 0.24));
+}
+
+body[data-ds-dark-theme] .wb-dsh-water__boat-shadow {
+  background: var(--wb-entry-projection-color);
 }
 
 .wb-dsh-water button.wb-dsh-water__boat {
@@ -189,6 +346,7 @@ export const WATER_SURFACE_STYLES = String.raw`
   box-shadow: none;
   cursor: pointer;
   transform-origin: center;
+  isolation: isolate;
   will-change: transform;
 }
 
@@ -209,6 +367,7 @@ export const WATER_SURFACE_STYLES = String.raw`
   mask-position: center;
   mask-repeat: no-repeat;
   mask-size: 100% 100%;
+  z-index: 0;
   background: var(--wb-entry-projection-color);
   opacity: var(--wb-entry-boat-projection-opacity);
   filter: blur(var(--wb-entry-boat-projection-blur));
@@ -224,8 +383,30 @@ export const WATER_SURFACE_STYLES = String.raw`
   left: 50%;
   width: var(--wb-entry-boat-body-width);
   height: var(--wb-entry-boat-body-height);
+  z-index: 1;
   transform: translate(-50%, -50%) rotate(var(--wb-entry-boat-heading))
     scale(var(--wb-entry-water-visual-scale));
+}
+
+.wb-dsh-water__boat-model {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  z-index: 2;
+  width: 6rem;
+  height: 6rem;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(var(--wb-entry-water-visual-scale));
+}
+
+.wb-dsh-water__boat[data-boat-renderer="webgl"] .wb-dsh-water__boat-model {
+  opacity: 1;
+}
+
+.wb-dsh-water__boat[data-boat-renderer="webgl"] .wb-dsh-water__boat-body {
+  visibility: hidden;
 }
 
 .wb-dsh-water__boat-hull {
@@ -244,12 +425,14 @@ export const WATER_SURFACE_STYLES = String.raw`
 .wb-dsh-water__icon-button,
 .wb-dsh-water__send,
 .wb-dsh-water-entry {
+  position: relative;
   min-width: var(--wb-touch-target);
   min-height: var(--wb-touch-target);
   border: var(--wb-f-border) solid transparent;
   border-radius: var(--wb-f-radius-pill);
   color: var(--wb-color-text-primary);
   background: transparent;
+  appearance: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -259,7 +442,8 @@ export const WATER_SURFACE_STYLES = String.raw`
     opacity var(--wb-f-duration-fast) var(--wb-f-ease-state),
     transform var(--wb-f-duration-fast) var(--wb-f-ease-state),
     background-color var(--wb-f-duration-fast) var(--wb-f-ease-state),
-    border-color var(--wb-f-duration-fast) var(--wb-f-ease-state);
+    border-color var(--wb-f-duration-fast) var(--wb-f-ease-state),
+    box-shadow var(--wb-f-duration-fast) var(--wb-f-ease-state);
 }
 
 .wb-dsh-water__close,
@@ -268,9 +452,17 @@ export const WATER_SURFACE_STYLES = String.raw`
   z-index: 4;
   top: var(--wb-surface-pad-top);
   right: var(--wb-surface-pad-right);
-  background: color-mix(in srgb, var(--wb-color-layer-01) 72%, transparent);
-  border-color: color-mix(in srgb, var(--wb-color-border-subtle) 72%, transparent);
-  backdrop-filter: blur(0.9rem);
+  background: var(--wb-color-layer-02);
+  border-color: var(--wb-color-border-subtle);
+  box-shadow: 0 0.35rem 0.9rem color-mix(in srgb, black 22%, transparent);
+}
+
+body[data-ds-dark-theme] .wb-dsh-water__close,
+body[data-ds-dark-theme] .wb-dsh-water__sound {
+  color: var(--dsw-alias-label-primary, #f3f5f7);
+  background: var(--dsw-alias-bg-layer-1, #202a33);
+  border-color: rgba(120, 145, 164, 0.2);
+  box-shadow: 0 0.35rem 0.9rem rgba(0, 6, 12, 0.28);
 }
 
 .wb-dsh-water__sound {
@@ -288,6 +480,7 @@ export const WATER_SURFACE_STYLES = String.raw`
 }
 .wb-dsh-water__sound:disabled { opacity: 0.5; cursor: default; }
 .wb-dsh-water__sound svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+
 .wb-dsh-water__composer-wrap {
   position: absolute;
   z-index: 3;
@@ -550,8 +743,15 @@ export const WATER_SURFACE_STYLES = String.raw`
   .wb-dsh-water__close:hover,
   .wb-dsh-water__icon-button:hover,
   .wb-dsh-water-entry:hover {
-    background: color-mix(in srgb, var(--wb-color-text-primary) 7%, transparent);
-    border-color: var(--wb-color-border-subtle);
+    background: color-mix(in srgb, var(--wb-color-layer-02) 88%, var(--wb-color-text-primary));
+    border-color: var(--wb-color-border-strong);
+    box-shadow: 0 0.45rem 1rem color-mix(in srgb, black 26%, transparent);
+  }
+
+  body[data-ds-dark-theme] .wb-dsh-water__close:hover,
+  body[data-ds-dark-theme] .wb-dsh-water__icon-button:hover {
+    background: #26333d;
+    border-color: rgba(157, 181, 198, 0.3);
   }
 
 }
@@ -561,6 +761,13 @@ export const WATER_SURFACE_STYLES = String.raw`
 .wb-dsh-water__send:not(:disabled):active,
 .wb-dsh-water-entry:active {
   transform: scale(0.96);
+}
+
+.wb-dsh-water__close:active,
+.wb-dsh-water__icon-button:active {
+  box-shadow:
+    inset 0 2px 4px color-mix(in srgb, black 18%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, white 24%, transparent);
 }
 
 .wb-dsh-water__close:focus-visible,
@@ -612,10 +819,6 @@ export const WATER_SURFACE_STYLES = String.raw`
 
 .wb-dsh-water[data-device-mode="phone"] {
   --wb-entry-water-visual-scale: 0.8;
-}
-
-.wb-dsh-water[data-device-mode="phone"] .wb-dsh-water__pointer-shadow {
-  display: none;
 }
 
 .wb-dsh-water[data-device-mode="phone"] .wb-dsh-water__composer-wrap {
@@ -765,6 +968,17 @@ export const WATER_SURFACE_STYLES = String.raw`
   pointer-events: auto;
   opacity: 1;
   transform: translate3d(0, 0, 0) scale(1);
+}
+
+body[data-ds-dark-theme] .wb-dsh-water-composer-layer .wb-dsh-native-card {
+  /* Match the screenshot's DSH input surface and its quiet blue halo. */
+  background: var(--dsw-specific-input-major, var(--dsw-alias-bg-layer-2, #2c2c2e));
+  border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary, #679efe) 42%, transparent);
+  box-shadow:
+    var(--dsw-shadow-lv2, 0 4px 12px 0 #00000005, 0 2px 8px 0 #0000000a),
+    0 0 2.5rem color-mix(in srgb, var(--dsw-alias-state-business-primary, #679efe) 11%, transparent),
+    0 -0.9px 0 rgba(184, 211, 246, 0.48),
+    0 -0.9px 1px rgba(147, 185, 235, 0.24);
 }
 
 .wb-dsh-water-composer-layer[data-motion-phase="entering"] {
@@ -1204,6 +1418,11 @@ export const WATER_SURFACE_STYLES = String.raw`
     height: auto;
   }
 
+  body[data-ds-dark-theme] .wb-dsh-water::before,
+  body[data-ds-dark-theme] .wb-dsh-water::after {
+    animation: none;
+  }
+
   .wb-dsh-native-context {
     min-height: 2rem;
     padding: 0 0.5rem 0.375rem;
@@ -1262,6 +1481,11 @@ export const WATER_SURFACE_STYLES = String.raw`
 }
 
 @media (prefers-reduced-motion: reduce) {
+  body[data-ds-dark-theme] .wb-dsh-water::before,
+  body[data-ds-dark-theme] .wb-dsh-water::after {
+    animation: none;
+  }
+
   .wb-dsh-water,
   .wb-dsh-water__close,
   .wb-dsh-water__icon-button,
@@ -1294,6 +1518,21 @@ export const WATER_SURFACE_STYLES = String.raw`
   from { opacity: 0; }
 }
 
+@keyframes wb-dsh-conversation-ripple {
+  from {
+    -webkit-mask-image: radial-gradient(circle at var(--wb-conversation-ripple-x) var(--wb-conversation-ripple-y),
+      transparent 0, transparent 0, #000 1px);
+    mask-image: radial-gradient(circle at var(--wb-conversation-ripple-x) var(--wb-conversation-ripple-y),
+      transparent 0, transparent 0, #000 1px);
+  }
+  to {
+    -webkit-mask-image: radial-gradient(circle at var(--wb-conversation-ripple-x) var(--wb-conversation-ripple-y),
+      transparent 180vmax, #000 calc(180vmax + 1px));
+    mask-image: radial-gradient(circle at var(--wb-conversation-ripple-x) var(--wb-conversation-ripple-y),
+      transparent 180vmax, #000 calc(180vmax + 1px));
+  }
+}
+
 @keyframes wb-dsh-native-composer-enter {
   from {
     opacity: 0;
@@ -1309,6 +1548,48 @@ export const WATER_SURFACE_STYLES = String.raw`
     opacity: 0;
     transform: translate3d(0, var(--wb-native-motion-exit-distance), 0)
       scale(var(--wb-native-motion-exit-scale));
+  }
+}
+
+@keyframes wb-dsh-moonlight-drift {
+  0% {
+    opacity: 0.62;
+    transform: translate3d(-5%, -3%, 0) scale(1.02);
+  }
+  42% {
+    opacity: 0.9;
+    transform: translate3d(2%, 1%, 0) scale(1.08);
+  }
+  73% {
+    opacity: 0.7;
+    transform: translate3d(5%, -1%, 0) scale(1.04);
+  }
+  100% {
+    opacity: 0.86;
+    transform: translate3d(-1%, 3%, 0) scale(1.1);
+  }
+}
+
+@keyframes wb-dsh-cloud-cover {
+  0% {
+    opacity: 0.45;
+    transform: translate3d(-16%, 0%, 0) scale(1.05);
+  }
+  28% {
+    opacity: 0.78;
+    transform: translate3d(-4%, -2%, 0) scale(1.1);
+  }
+  57% {
+    opacity: 0.58;
+    transform: translate3d(8%, 2%, 0) scale(1.06);
+  }
+  81% {
+    opacity: 0.86;
+    transform: translate3d(18%, -1%, 0) scale(1.12);
+  }
+  100% {
+    opacity: 0.5;
+    transform: translate3d(26%, 3%, 0) scale(1.08);
   }
 }
 `;

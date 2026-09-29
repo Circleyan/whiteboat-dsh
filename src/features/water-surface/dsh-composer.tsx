@@ -142,7 +142,7 @@ export interface DshWaterComposerProps {
   selectAgentPreset?(id: string): Promise<void>;
   onSelectWorkspace(workspaceId: string): Promise<void>;
   onDismiss(): void;
-  onAccepted(): void;
+  onAccepted(center?: { x: number; y: number }): void;
 }
 
 function Icon({ name }: { name: "arrow" | "chevron" | "folder" | "plus" | "spark" }) {
@@ -387,7 +387,7 @@ export function DshWaterComposer(props: DshWaterComposerProps) {
   const permissions = props.useProjection<PermissionStateLike>("permissions", (value) => value) as PermissionStateLike | undefined;
   const [openMenu, setOpenMenu] = useState<ComposerMenu | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
-  const submittedRef = useRef(false);
+  const cardRef = useRef<HTMLDivElement | null>(null);
   const loadModelsRef = useRef(props.loadModels);
   const loadAgentPresetsRef = useRef(props.loadAgentPresets);
 
@@ -419,16 +419,6 @@ export function DshWaterComposer(props: DshWaterComposerProps) {
   }, [ready, props.sessionId]);
 
   useEffect(() => {
-    if (!submittedRef.current || input?.phase !== "plain") return;
-    if (draft === "") {
-      submittedRef.current = false;
-      props.onAccepted();
-      return;
-    }
-    submittedRef.current = false;
-  }, [draft, input?.phase, props.onAccepted]);
-
-  useEffect(() => {
     if (!ready) return;
     const onEscape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
@@ -444,8 +434,12 @@ export function DshWaterComposer(props: DshWaterComposerProps) {
 
   const submit = () => {
     if (disabled || !draft.trim() || !props.inputActions) return;
-    submittedRef.current = true;
     props.inputActions.submit();
+    document.dispatchEvent(new CustomEvent("whiteboat:idea-accepted"));
+    const rect = cardRef.current?.getBoundingClientRect();
+    props.onAccepted(rect
+      ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+      : undefined);
   };
 
   return createPortal((
@@ -526,7 +520,7 @@ export function DshWaterComposer(props: DshWaterComposerProps) {
           </div>
         )}
       </div>
-      <div className="wb-dsh-native-card" data-composer-card="water">
+      <div ref={cardRef} className="wb-dsh-native-card" data-composer-card="water">
         {props.overlay && <div className="wb-dsh-native-overlay">{props.overlay}</div>}
         <textarea
           ref={inputRef}

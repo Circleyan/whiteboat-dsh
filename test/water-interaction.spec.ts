@@ -14,6 +14,7 @@ import {
 import {
   DSH_COMPOSER_ENTER_DURATION_MS,
   DSH_COMPOSER_EXIT_DURATION_MS,
+  DSH_CONVERSATION_RIPPLE_DURATION_MS,
   WaterSurfaceStore,
 } from "../src/features/water-surface/surface-store";
 import {
@@ -59,19 +60,14 @@ describe("shared Whiteboat water interaction", () => {
       step: 0.05,
       defaultValue: 1,
     });
-    expect(DEFAULT_WHITEBOAT_DSH_SETTINGS).toEqual({ boatFollowSpeed: 1, soundEnabled: true });
+    expect(DEFAULT_WHITEBOAT_DSH_SETTINGS).toEqual({ boatFollowSpeed: 1 });
     expect(normalizeDshBoatFollowSpeed(undefined)).toBe(1);
     expect(normalizeDshBoatFollowSpeed(0.49)).toBe(0.5);
     expect(normalizeDshBoatFollowSpeed(1.26)).toBe(1.25);
     expect(normalizeDshBoatFollowSpeed(2.1)).toBe(2);
     expect(decodeWhiteboatDshSettings({ boatFollowSpeed: 1.74 })).toEqual({
       boatFollowSpeed: 1.75,
-      soundEnabled: true,
     });
-    expect(decodeWhiteboatDshSettings({ soundEnabled: false })).toEqual({
-      boatFollowSpeed: 1, soundEnabled: false,
-    });
-    expect(decodeWhiteboatDshSettings({ soundEnabled: "false" })?.soundEnabled).toBe(true);
     expect(decodeWhiteboatDshSettings(null)).toBeUndefined();
   });
 
@@ -242,6 +238,29 @@ describe("shared Whiteboat water interaction", () => {
       expect(surface.getSnapshot().composerOpen).toBe(false);
     } finally {
       vi.unstubAllGlobals();
+      vi.useRealTimers();
+    }
+  });
+
+  it("reveals native Conversation through a centred circular ripple after acceptance", () => {
+    vi.useFakeTimers();
+    try {
+      const surface = new WaterSurfaceStore();
+      surface.showComposer("draft-session");
+      vi.advanceTimersByTime(DSH_COMPOSER_ENTER_DURATION_MS);
+
+      const complete = vi.fn();
+      surface.beginConversationRipple({ x: 320, y: 240 }, complete);
+      expect(surface.getSnapshot()).toMatchObject({
+        composerOpen: false,
+        conversationRipple: true,
+        conversationRippleCenter: { x: 320, y: 240 },
+      });
+      vi.advanceTimersByTime(DSH_CONVERSATION_RIPPLE_DURATION_MS - 1);
+      expect(complete).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1);
+      expect(complete).toHaveBeenCalledTimes(1);
+    } finally {
       vi.useRealTimers();
     }
   });

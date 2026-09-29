@@ -2,9 +2,12 @@ import { Howl } from "howler";
 import { WhiteboatBoatSoundscape, type WhiteboatSoundState } from "whiteboat-core/boat-water-sound";
 import { BOAT_WATER_SOURCE } from "whiteboat-core/boat-water-source";
 
+export const WHITEBOAT_IDEA_ACCEPTED_EVENT = "whiteboat:idea-accepted";
+
 /** DSH owns browser/overlay events; the shared engine owns playback state. */
 export function mountDshWaterAudio(root: HTMLElement, enabled: boolean, onState?: (state: WhiteboatSoundState) => void) {
   const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let soundEnabled = enabled;
   let previousState: WhiteboatSoundState | undefined;
   const sound = new WhiteboatBoatSoundscape({
     enabled,
@@ -23,7 +26,13 @@ export function mountDshWaterAudio(root: HTMLElement, enabled: boolean, onState?
   const onVisibility = () => sound.setSuspended("document-hidden", document.hidden);
   const onMotion = () => sound.setReducedMotion(motion.matches);
   const onGesture = (event: Event) => {
-    if (event.isTrusted) sound.activate();
+    if (!event.isTrusted) return;
+    sound.activate();
+    sound.prepareIdeaDropAudio();
+  };
+  const onIdeaAccepted = () => {
+    if (!soundEnabled) return;
+    sound.playIdeaDropSound();
   };
   onVisibility();
   sound.activate();
@@ -33,15 +42,20 @@ export function mountDshWaterAudio(root: HTMLElement, enabled: boolean, onState?
   document.addEventListener("pointerdown", onGesture, true);
   document.addEventListener("touchend", onGesture, true);
   document.addEventListener("keydown", onGesture, true);
+  document.addEventListener(WHITEBOAT_IDEA_ACCEPTED_EVENT, onIdeaAccepted);
   motion.addEventListener("change", onMotion);
   return {
-    setEnabled: (value: boolean) => sound.setEnabled(value),
+    setEnabled: (value: boolean) => {
+      soundEnabled = value;
+      sound.setEnabled(value);
+    },
     setBoatSpeed: (value: number) => sound.setBoatSpeed(value),
     destroy() {
       document.removeEventListener("visibilitychange", onVisibility);
       document.removeEventListener("pointerdown", onGesture, true);
       document.removeEventListener("touchend", onGesture, true);
       document.removeEventListener("keydown", onGesture, true);
+      document.removeEventListener(WHITEBOAT_IDEA_ACCEPTED_EVENT, onIdeaAccepted);
       motion.removeEventListener("change", onMotion);
       sound.destroy();
     },

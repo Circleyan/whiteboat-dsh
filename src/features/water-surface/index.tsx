@@ -13,10 +13,19 @@ import {
   type CanvasCreationEntryDeviceMode,
 } from "whiteboat-core/navigation";
 import { CANVAS_CREATION_BOAT_ASSETS } from "whiteboat-core/boat-assets";
-import { applyCanvasCreationCelestialProjection } from "whiteboat-core/projection";
 import type { WhiteboatSoundState } from "whiteboat-core/boat-water-sound";
 import { mountDshWaterAudio } from "./audio";
+import { applyDshCelestialProjection } from "./celestial-light";
+import { mountDshBoatRenderer } from "./boat-renderer";
 import { DshWaterComposer } from "./dsh-composer";
+import {
+  advanceDshWaterFocus,
+  createDshWaterFocusState,
+  isDshWaterFocusSettled,
+  resolveDshWaterFocusAnchor,
+  resolveDshWaterFocusArea,
+  toggleDshWaterFocus,
+} from "./focus-veil";
 import {
   DshWaterSettingsPage,
   useWhiteboatDshSettings,
@@ -166,17 +175,21 @@ function WaterSurface({
   );
   const open = useSurface((state) => state.open);
   const composerOpen = useSurface((state) => state.composerOpen);
+  const composerClosing = useSurface((state) => state.composerClosing);
   const preparing = useSurface((state) => state.preparing);
   const surfaceStatusMessage = useSurface((state) => state.status);
   const surfaceStatusError = useSurface((state) => state.statusError);
   const composerX = useSurface((state) => state.composerX);
   const composerY = useSurface((state) => state.composerY);
   const composerMotion = useSurface((state) => state.composerMotion);
+  const conversationRipple = useSurface((state) => state.conversationRipple);
+  const conversationRippleCenter = useSurface((state) => state.conversationRippleCenter);
   const [root, setRoot] = useState<HTMLElement | null>(null);
   const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null);
+  const [boatCanvas, setBoatCanvas] = useState<HTMLCanvasElement | null>(null);
   const [boatEl, setBoatEl] = useState<HTMLButtonElement | null>(null);
-  const [pointerEl, setPointerEl] = useState<HTMLSpanElement | null>(null);
   const [composerWrap, setComposerWrap] = useState<HTMLDivElement | null>(null);
+  const [focusVeil, setFocusVeil] = useState<HTMLDivElement | null>(null);
   const [deviceMode, setDeviceMode] = useState<CanvasCreationEntryDeviceMode>(
     resolveDshWaterDeviceMode,
   );
@@ -209,10 +222,17 @@ function WaterSurface({
 
   composerOpenRef.current = composerOpen;
   preparingRef.current = preparing;
+  // The water holds still and recedes around the composer while it stays open;
+  // leaving for good (not relocating) releases it at once.
+  const waterFocused = composerOpen && !composerClosing && deviceMode !== "phone";
+  const waterFocusedRef = useRef(waterFocused);
+  waterFocusedRef.current = waterFocused;
+  const setWaterFocusRef = useRef<((focused: boolean) => void) | null>(null);
+  useEffect(() => { setWaterFocusRef.current?.(waterFocused); }, [waterFocused]);
   useDynamicViewport(root);
 
   useEffect(() => {
-    if (!open || !root || !canvas || !boatEl || !pointerEl || !composerWrap) {
+    if (!open || !root || !canvas || !boatCanvas || !boatEl || !composerWrap || !focusVeil) {
       return;
     }
 
@@ -220,7 +240,17 @@ function WaterSurface({
     const water = new CanvasCreationWaterField(canvas, {
       tokenRoot: root,
       reducedMotion: motionQuery.matches,
+      // Ease the flow to a stop under the composer and back again on close.
+      pauseDurationMs: 220,
+      resumeDurationMs: 320,
     });
+    let boatRenderer: ReturnType<typeof mountDshBoatRenderer> | undefined;
+    try {
+      boatRenderer = mountDshBoatRenderer(boatCanvas, boatEl);
+    } catch (error) {
+      // A device without WebGL retains the original accessible boat and all input behavior.
+      console.warn("[water-surface] 3D boat unavailable; using the shared artwork", error);
+    }
     let mode = resolveDshWaterDeviceMode();
     const startsWithComposer = mode === "phone";
     if (startsWithComposer && !composerOpenRef.current && !preparingRef.current) {
@@ -236,6 +266,9 @@ function WaterSurface({
     let target: { point: { x: number; y: number }; kind: "pointer" | "click" | "roam" } | null = null;
     let composerAnchor: { x: number; y: number } | null = null;
     let movementFrame: number | null = null;
+    let focusFrame: number | null = null;
+    const focus = createDshWaterFocusState();
+    let focusPadding = 0;
     let projectionFrame: number | null = null;
     let roamTimer: number | null = null;
     let lastFrameAt = performance.now();
@@ -303,7 +336,55 @@ function WaterSurface({
         `${boat.heading + Math.PI * 0.5}rad`,
       );
       water.setBoat(boat);
+      // The hull-side wake settles in only once the boat has moored.
+      water.setMooring(waterFocusedRef.current && !target ? { x: boat.x, y: boat.y } : null);
       audioRef.current?.setBoatSpeed(boat.speed);
+      boatRenderer?.setHeading(boat.heading);
+      renderWaterFocus();
+    };
+
+    function syncWaterFocusAnchor() {
+      const position = resolveComposerPosition();
+      if (!position) return;
+      focus.anchor = resolveDshWaterFocusAnchor(
+        { ...position, width: composerWrap!.offsetWidth, height: composerWrap!.offsetHeight },
+        composerAnchor ?? { x: boat.x, y: boat.y },
+      );
+    }
+
+    function renderWaterFocus(now = performance.now()) {
+      if (!focus.anchor) return;
+      const amount = advanceDshWaterFocus(focus, {
+        boat, sailing: target !== null, reducedMotion: motionQuery.matches, now,
+      });
+      const area = resolveDshWaterFocusArea(focus.anchor, boat, boatEl!.offsetWidth * 0.5);
+      focusVeil!.style.setProperty("--wb-entry-water-focus-x", `${area.x}px`);
+      focusVeil!.style.setProperty("--wb-entry-water-focus-y", `${area.y}px`);
+      focusVeil!.style.setProperty("--wb-entry-water-focus-rx", `${area.rx}px`);
+      focusVeil!.style.setProperty("--wb-entry-water-focus-ry", `${area.ry}px`);
+      focusVeil!.style.setProperty("--wb-entry-water-focus-amount", amount.toFixed(4));
+      // The background recedes by fading the dashes themselves on the same
+      // clear area and ramp; no colour layer is drawn over the water.
+      water.setFocus(amount > 0 ? { ...area, padding: focusPadding, amount } : null);
+      if (!isDshWaterFocusSettled(focus, target !== null) && focusFrame === null) {
+        focusFrame = window.requestAnimationFrame((timestamp) => {
+          focusFrame = null;
+          renderWaterFocus(timestamp);
+        });
+      }
+    }
+
+    const setWaterFocus = (focused: boolean) => {
+      root.dataset.waterFocus = focused ? "focused" : "clear";
+      water.setFlowPaused(focused);
+      if (focused) {
+        focusPadding = Number.parseFloat(
+          getComputedStyle(focusVeil).getPropertyValue("--wb-entry-water-focus-padding"),
+        ) || 0;
+        syncWaterFocusAnchor();
+      }
+      toggleDshWaterFocus(focus, focused, boat, performance.now());
+      placeBoat();
     };
 
     const resolveComposerPosition = () => {
@@ -338,6 +419,8 @@ function WaterSurface({
       const position = resolveComposerPosition();
       if (!position) return;
       onRelocateComposer(position.x, position.y);
+      // An established focus holds at full strength and follows the boat over.
+      if (waterFocusedRef.current) syncWaterFocusAnchor();
     };
 
     const openComposer = (anchor: { x: number; y: number }) => {
@@ -433,10 +516,23 @@ function WaterSurface({
 
     const updateProjection = (timestamp: number) => {
       projectionFrame = null;
-      applyCanvasCreationCelestialProjection(root, {
-        elapsedSeconds: Math.max(0, timestamp - projectionStartedAt) / 1000,
+      const seconds = Math.max(0, timestamp - projectionStartedAt) / 1000;
+      const projection = applyDshCelestialProjection(root, {
+        elapsedSeconds: seconds,
         reducedMotion: motionQuery.matches,
         deviceMode: mode,
+      });
+      const night = projection.light === "moon";
+      const moonlight = night ? Number(getComputedStyle(root, "::before").opacity) : 1;
+      const cloud = night ? Number(getComputedStyle(root, "::after").opacity) : 0;
+      boatRenderer?.render({
+        angleDeg: projection.angleDeg,
+        elevation: projection.elevation,
+        lightIntensity: Number(root.dataset.celestialLightIntensity ?? 1),
+        night,
+        visibility: Math.max(0.15, moonlight * (1 - cloud * 0.65)),
+        seconds,
+        reducedMotion: motionQuery.matches,
       });
       if (!motionQuery.matches) {
         projectionFrame = window.requestAnimationFrame(updateProjection);
@@ -456,12 +552,8 @@ function WaterSurface({
           ".wb-dsh-water__boat, .wb-dsh-water__composer-wrap, .wb-dsh-water__close, .wb-dsh-water__sound",
         )
       ) {
-        pointerEl.dataset.visible = "false";
         return;
       }
-      pointerEl.style.left = `${point.x}px`;
-      pointerEl.style.top = `${point.y}px`;
-      pointerEl.dataset.visible = "true";
       if (
         shouldCanvasCreationBoatFollowPointer(
           mode,
@@ -474,7 +566,6 @@ function WaterSurface({
     };
 
     const onPointerLeave = () => {
-      pointerEl.dataset.visible = "false";
       if (!composerOpenRef.current) stopFollowingPointer();
     };
 
@@ -540,13 +631,25 @@ function WaterSurface({
       scheduleMovement();
     };
 
+    const scheduleProjection = () => {
+      if (projectionFrame === null) projectionFrame = window.requestAnimationFrame(updateProjection);
+    };
+    const themeObserver = new MutationObserver(() => {
+      water.refreshColors();
+      scheduleProjection();
+    });
+    themeObserver.observe(document.body, { attributes: true, attributeFilter: ["data-ds-dark-theme"] });
+    document.addEventListener("visibilitychange", scheduleProjection);
+    boatCanvas.addEventListener("webglcontextrestored", scheduleProjection);
     setMode(mode);
     if (mode === "phone") {
       const initial = sampleCanvasCreationPhoneRoamTarget(getPhoneRoamLimits());
       boat = { ...boat, ...initial };
     }
+    setWaterFocusRef.current = setWaterFocus;
     placeBoat();
     syncComposerPosition();
+    if (waterFocusedRef.current) setWaterFocus(true);
     water.start();
     root.addEventListener("pointermove", onPointerMove);
     root.addEventListener("pointerleave", onPointerLeave);
@@ -568,20 +671,28 @@ function WaterSurface({
       motionQuery.removeEventListener("change", onMotionChange);
       clearRoamTimer();
       if (movementFrame !== null) window.cancelAnimationFrame(movementFrame);
+      if (focusFrame !== null) window.cancelAnimationFrame(focusFrame);
+      setWaterFocusRef.current = null;
+      delete root.dataset.waterFocus;
       if (projectionFrame !== null) window.cancelAnimationFrame(projectionFrame);
       water.destroy();
+      themeObserver.disconnect();
+      document.removeEventListener("visibilitychange", scheduleProjection);
+      boatCanvas.removeEventListener("webglcontextrestored", scheduleProjection);
+      boatRenderer?.destroy();
     };
   }, [
+    boatCanvas,
     boatEl,
     boatFollowSpeed,
     canvas,
     composerWrap,
+    focusVeil,
     onHideComposer,
     onPlaceComposer,
     onPrepareComposer,
     onRelocateComposer,
     open,
-    pointerEl,
     root,
   ]);
 
@@ -595,9 +706,21 @@ function WaterSurface({
       data-wb-dsh-water
       data-device-mode={deviceMode}
       data-composer-open={composerOpen || undefined}
+      data-conversation-ripple={conversationRipple || undefined}
+      style={{
+        "--wb-conversation-ripple-x": conversationRippleCenter
+          ? `${conversationRippleCenter.x}px` : "50%",
+        "--wb-conversation-ripple-y": conversationRippleCenter
+          ? `${conversationRippleCenter.y}px` : "50%",
+      } as CSSProperties}
     >
       <canvas className="wb-dsh-water__field" ref={setCanvas} aria-hidden="true" />
-      <span className="wb-dsh-water__pointer-shadow" ref={setPointerEl} data-visible="false" aria-hidden="true" />
+      {/* Progressive blur above the water, below the boat and composer. */}
+      <div className="wb-dsh-water__focus-veil" ref={setFocusVeil} aria-hidden="true">
+        <span className="wb-dsh-water__focus-layer" data-layer="near" />
+        <span className="wb-dsh-water__focus-layer" data-layer="mid" />
+        <span className="wb-dsh-water__focus-layer" data-layer="far" />
+      </div>
       <button
         type="button"
         className="wb-dsh-water__boat"
@@ -613,6 +736,7 @@ function WaterSurface({
           }}
           aria-hidden="true"
         />
+        <canvas className="wb-dsh-water__boat-model" ref={setBoatCanvas} aria-hidden="true" />
         <span className="wb-dsh-water__boat-body" aria-hidden="true">
           <img className="wb-dsh-water__boat-hull" src={CANVAS_CREATION_BOAT_ASSETS.boatHull} alt="" />
           <img className="wb-dsh-water__boat-window" src={CANVAS_CREATION_BOAT_ASSETS.boatWindow} alt="" />
@@ -754,7 +878,9 @@ export function apply(ctx: ClientContextLike): void {
             }
           },
           onDismiss: surface.hideComposer,
-          onAccepted: closeSurface,
+          onAccepted: (center?: { x: number; y: number }) => {
+            surface.beginConversationRipple(center, closeSurface);
+          },
         };
         },
       }, DshWaterComposer as (props: never) => unknown);

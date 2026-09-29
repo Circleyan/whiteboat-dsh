@@ -8,7 +8,9 @@ The first slice opens an unbranded water surface where you can pause or type bef
 
 The surface reuses Whiteboat's shared water field, boat, pointer navigation, mobile roaming, wake intensity, and celestial projection. Its composer, Workspace, Agent preset, commands, permissions, model, reasoning level, draft, and send lifecycle remain native to DSH.
 
-The water surface includes the same gentle, offline water recording used by Whiteboat Home. Sound fades with boat movement. Use the speaker button in the upper right or “白舟 → 水面 → 水面音效” in settings to mute it; DSH remembers the choice. If the browser blocks autoplay, an ordinary click, touch, or key press starts the sound. Leaving the surface or hiding the page stops playback. No microphone access is involved. Audio attribution is in [AUDIO-LICENSE.md](AUDIO-LICENSE.md).
+The water surface includes the same gentle, offline water recording used by Whiteboat Home. Sound fades with boat movement. Use the speaker button in the upper right or “白舟 → 水面 → 水面音效” in settings to mute it; DSH remembers the choice. If the browser blocks autoplay, an ordinary click, touch, or key press starts the sound. Leaving the surface or hiding the page stops playback. No microphone access is involved. Sending an idea also drops one randomly chosen stone into the water. Audio attribution is in [AUDIO-LICENSE.md](AUDIO-LICENSE.md).
+
+After an explicit send, a circular ripple expands from the centre of the native Conversation composer, then the water surface yields to DSH's native Conversation detail. Messages, run phases, tools, and agents stay in DSH's detail surface. Obsidian's ripple is a Canvas-node context surface and does not become a DSH node view; this package does not copy Canvas nodes, edges, or ripple state.
 
 ## Settings / 配置
 
@@ -19,7 +21,7 @@ The water surface includes the same gentle, offline water recording used by Whit
 准备环境：Node.js `>=20.19` 与 pnpm。直接把 GitHub Release 中的预构建包安装到 DSH 的 `web` profile：
 
 ```sh
-pnpm dlx @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web add https://github.com/Circleyan/whiteboat-dsh/releases/download/v0.1.1/whiteboat-dsh-0.1.1.tgz
+pnpm dlx @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web add https://github.com/Circleyan/whiteboat-dsh/releases/download/v0.1.2/whiteboat-dsh-0.1.2.tgz
 ```
 
 然后启动 DSH：
@@ -65,6 +67,14 @@ The exact `vendor/whiteboat-core` gitlink owns the shared non-integral-height wa
 
 The current compatibility target is `@deepseek-ai/dsh` `0.1.1-rc.2`. DSH is still in developer preview, so host compatibility is verified independently for every release.
 
+### Maintainer release
+
+Ordinary pushes and pull requests run verification only. A public package is created from GitHub Actions with the manually dispatched `Release DSH` workflow on `main`; the entered version must already match `package.json`. The workflow resolves the exact `whiteboat-core` gitlink, reruns tests and build, creates the `.tgz`, waits at the `dsh-release` environment gate, requires its `DSH_RELEASE_GATE=enabled` variable, and then creates the GitHub Release. It does not run `npm publish`.
+
 ## Roadmap boundary
 
 Water surface is the first released feature, not the identity of this repository. Future features live under `src/features/` or equivalent host adapters and reuse `whiteboat-core` when their product semantics are genuinely shared with Obsidian. Feature parity is not automatic: every capability keeps its own DSH lifecycle and runtime proof.
+
+### 本地视觉调整 · 2026-09-24
+
+3D 小船采用主舟确认的亮色 C / 暗色 E：白天舱内反差更柔和，夜间船身适度提亮；太阳 / 月亮方向、云遮明暗和水面投影继续参与画面。夜间材质与 Obsidian 一致。这组调整已随 `0.1.2` 进入源码与预构建包；真实客户端的视觉验收仍是独立门禁。

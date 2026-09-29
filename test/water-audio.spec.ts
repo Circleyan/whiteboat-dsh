@@ -3,6 +3,7 @@ import { afterEach, expect, it, vi } from "vitest";
 const engine = vi.hoisted(() => ({
   activate: vi.fn(), setEnabled: vi.fn(), setBoatSpeed: vi.fn(),
   setSuspended: vi.fn(), setReducedMotion: vi.fn(), destroy: vi.fn(),
+  prepareIdeaDropAudio: vi.fn(), playIdeaDropSound: vi.fn(),
 }));
 vi.mock("howler", () => ({ Howl: vi.fn() }));
 vi.mock("whiteboat-core/boat-water-source", () => ({ BOAT_WATER_SOURCE: "offline" }));
@@ -37,6 +38,8 @@ it("routes trusted gestures, background and motion changes and removes every lis
   expect(engine.activate).toHaveBeenCalledTimes(1);
   for (const name of ["pointerdown", "touchend", "keydown"]) listeners.get(name)!({ isTrusted: true });
   expect(engine.activate).toHaveBeenCalledTimes(4);
+  // A trusted gesture also warms the idea-drop pool; an untrusted one does not.
+  expect(engine.prepareIdeaDropAudio).toHaveBeenCalledTimes(3);
   document.hidden = false;
   listeners.get("visibilitychange")!({ isTrusted: true });
   expect(engine.setSuspended).toHaveBeenLastCalledWith("document-hidden", false);
@@ -45,6 +48,12 @@ it("routes trusted gestures, background and motion changes and removes every lis
   audio.setEnabled(false); audio.setBoatSpeed(0.7);
   expect(engine.setEnabled).toHaveBeenCalledWith(false);
   expect(engine.setBoatSpeed).toHaveBeenCalledWith(0.7);
+  // While muted, an accepted idea must not reach the engine.
+  listeners.get("whiteboat:idea-accepted")!({ isTrusted: true });
+  expect(engine.playIdeaDropSound).not.toHaveBeenCalled();
+  audio.setEnabled(true);
+  listeners.get("whiteboat:idea-accepted")!({ isTrusted: true });
+  expect(engine.playIdeaDropSound).toHaveBeenCalledTimes(1);
   audio.destroy();
   expect(listeners.size).toBe(0);
   expect(motion.removeEventListener).toHaveBeenCalledOnce();
