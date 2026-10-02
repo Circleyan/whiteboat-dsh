@@ -6,6 +6,12 @@ import {
   type CanvasCreationWaterBoat,
 } from "whiteboat-core/water-field";
 import {
+  CANVAS_CREATION_WATER_IMPACT_DURATION_SECONDS,
+  mountCanvasCreationWaterImpact,
+  resolveCanvasCreationWaterImpactReach,
+  resolveCanvasCreationWaterImpactScale,
+} from "whiteboat-core/water-impact";
+import {
   advanceCanvasCreationBoatFollow,
   resolveCanvasCreationEntryDeviceMode,
   sampleCanvasCreationPhoneRoamTarget,
@@ -200,6 +206,7 @@ function WaterSurface({
   const [soundState, setSoundState] = useState<WhiteboatSoundState>("waiting");
   const [soundSaving, setSoundSaving] = useState(false);
   const [soundError, setSoundError] = useState(false);
+  const impactRef = useRef<ReturnType<typeof mountCanvasCreationWaterImpact> | null>(null);
   const toggleSound = async () => {
     if (!soundWritable || soundSaving) return;
     const next = !soundEnabled;
@@ -217,6 +224,60 @@ function WaterSurface({
     return () => { audioRef.current = null; audio.destroy(); };
   }, [open, root]);
   useEffect(() => { audioRef.current?.setEnabled(soundEnabled); }, [soundEnabled, open, root]);
+
+  useEffect(() => {
+    if (!open || !conversationRipple || !root || !canvas) return;
+    // The shared impact is a spatial transition. Respect the host preference
+    // by handing control back to the native Conversation immediately instead
+    // of mounting a full 2.66 second WebGL pass.
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const rootRect = root.getBoundingClientRect();
+    const center = conversationRippleCenter ?? {
+      x: rootRect.left + rootRect.width * 0.5,
+      y: rootRect.top + rootRect.height * 0.5,
+    };
+    const origin = {
+      x: center.x - rootRect.left,
+      y: center.y - rootRect.top,
+    };
+    const scale = resolveCanvasCreationWaterImpactScale(400);
+    const accents = getComputedStyle(root);
+    const wake = [
+      "--wb-entry-wake-color-strong",
+      "--wb-entry-wake-color-bright",
+      "--wb-entry-wake-color-middle",
+      "--wb-entry-wake-color-soft",
+    ].map((name) => accents.getPropertyValue(name).trim() || accents.color) as [string, string, string, string];
+    const impact = mountCanvasCreationWaterImpact(canvas, origin, {
+      accents: wake,
+      visualScale: scale,
+      reach: resolveCanvasCreationWaterImpactReach(
+        canvas.clientWidth,
+        canvas.clientHeight,
+        origin.x,
+        origin.y,
+        scale,
+      ),
+      canvasClassName: "wb-dsh-water__impact",
+    });
+    impactRef.current = impact;
+    if (!impact) return;
+    const started = performance.now();
+    let frame: number | null = null;
+    const tick = (now: number) => {
+      const elapsed = (now - started) / 1000;
+      impact.draw(elapsed);
+      if (elapsed < CANVAS_CREATION_WATER_IMPACT_DURATION_SECONDS) {
+        frame = window.requestAnimationFrame(tick);
+      }
+    };
+    frame = window.requestAnimationFrame(tick);
+    return () => {
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      impact.destroy();
+      impactRef.current = null;
+    };
+  }, [canvas, conversationRipple, conversationRippleCenter, open, root]);
   const composerOpenRef = useRef(composerOpen);
   const preparingRef = useRef(preparing);
 

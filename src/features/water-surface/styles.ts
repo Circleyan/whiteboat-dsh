@@ -180,6 +180,15 @@ export const WATER_SURFACE_STYLES = String.raw`
   pointer-events: none;
 }
 
+.wb-dsh-water__impact {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
 /* The veil never animates opacity: Chromium drops backdrop-filter while an
    opacity transition runs and then snaps the blur in when it ends. The surface
    script writes the amount and clear area every frame from the boat's voyage,
