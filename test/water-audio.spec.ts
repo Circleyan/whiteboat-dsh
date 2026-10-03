@@ -17,6 +17,7 @@ import { mountDshWaterAudio } from "../src/features/water-surface/audio";
 afterEach(() => { vi.unstubAllGlobals(); vi.clearAllMocks(); });
 
 it("routes trusted gestures, background and motion changes and removes every listener on exit", () => {
+  vi.useFakeTimers();
   const listeners = new Map<string, (event: { isTrusted: boolean }) => void>();
   const document = { hidden: true,
     addEventListener: vi.fn((name, fn) => listeners.set(name, fn)),
@@ -49,10 +50,10 @@ it("routes trusted gestures, background and motion changes and removes every lis
   expect(engine.setEnabled).toHaveBeenCalledWith(false);
   expect(engine.setBoatSpeed).toHaveBeenCalledWith(0.7);
   // While muted, an accepted idea must not reach the engine.
-  listeners.get("whiteboat:idea-accepted")!({ isTrusted: true });
+  audio.playIdeaDropSound();
   expect(engine.playIdeaDropSound).not.toHaveBeenCalled();
   audio.setEnabled(true);
-  listeners.get("whiteboat:idea-accepted")!({ isTrusted: true });
+  audio.playIdeaDropSound();
   expect(engine.playIdeaDropSound).toHaveBeenCalledTimes(1);
   audio.destroy();
   expect(listeners.size).toBe(0);

@@ -7,6 +7,7 @@ import {
 } from "whiteboat-core/water-field";
 import {
   CANVAS_CREATION_WATER_IMPACT_DURATION_SECONDS,
+  CANVAS_CREATION_WATER_IMPACT_FIRST_RING_DELAY_SECONDS,
   resolveCanvasCreationWaterImpactRingRadius,
   mountCanvasCreationWaterImpact,
   resolveCanvasCreationWaterImpactReach,
@@ -265,10 +266,15 @@ function WaterSurface({
     impactRef.current = impact;
     if (!impact) return;
     const started = performance.now();
+    let dropSoundPlayed = false;
     let frame: number | null = null;
     const tick = (now: number) => {
       const elapsed = (now - started) / 1000;
       impact.draw(elapsed);
+      if (!dropSoundPlayed && elapsed >= CANVAS_CREATION_WATER_IMPACT_FIRST_RING_DELAY_SECONDS) {
+        dropSoundPlayed = true;
+        audioRef.current?.playIdeaDropSound();
+      }
       // Match Obsidian's reveal timing to the shared impact curve: the hole
       // stays closed until the first ring delay, then follows the same
       // reach^1.05 expansion instead of an independent CSS easing curve.
