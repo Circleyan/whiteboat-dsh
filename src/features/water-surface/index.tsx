@@ -7,6 +7,7 @@ import {
 } from "whiteboat-core/water-field";
 import {
   CANVAS_CREATION_WATER_IMPACT_DURATION_SECONDS,
+  resolveCanvasCreationWaterImpactRingRadius,
   mountCanvasCreationWaterImpact,
   resolveCanvasCreationWaterImpactReach,
   resolveCanvasCreationWaterImpactScale,
@@ -248,16 +249,17 @@ function WaterSurface({
       "--wb-entry-wake-color-middle",
       "--wb-entry-wake-color-soft",
     ].map((name) => accents.getPropertyValue(name).trim() || accents.color) as [string, string, string, string];
+    const impactReach = resolveCanvasCreationWaterImpactReach(
+      canvas.clientWidth,
+      canvas.clientHeight,
+      origin.x,
+      origin.y,
+      scale,
+    );
     const impact = mountCanvasCreationWaterImpact(canvas, origin, {
       accents: wake,
       visualScale: scale,
-      reach: resolveCanvasCreationWaterImpactReach(
-        canvas.clientWidth,
-        canvas.clientHeight,
-        origin.x,
-        origin.y,
-        scale,
-      ),
+      reach: impactReach,
       canvasClassName: "wb-dsh-water__impact",
     });
     impactRef.current = impact;
@@ -267,6 +269,11 @@ function WaterSurface({
     const tick = (now: number) => {
       const elapsed = (now - started) / 1000;
       impact.draw(elapsed);
+      // Match Obsidian's reveal timing to the shared impact curve: the hole
+      // stays closed until the first ring delay, then follows the same
+      // reach^1.05 expansion instead of an independent CSS easing curve.
+      const radius = resolveCanvasCreationWaterImpactRingRadius(elapsed, impactReach);
+      root.style.setProperty("--wb-conversation-ripple-radius", `${radius}px`);
       if (elapsed < CANVAS_CREATION_WATER_IMPACT_DURATION_SECONDS) {
         frame = window.requestAnimationFrame(tick);
       }
@@ -274,6 +281,7 @@ function WaterSurface({
     frame = window.requestAnimationFrame(tick);
     return () => {
       if (frame !== null) window.cancelAnimationFrame(frame);
+      root.style.removeProperty("--wb-conversation-ripple-radius");
       impact.destroy();
       impactRef.current = null;
     };

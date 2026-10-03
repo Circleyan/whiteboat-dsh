@@ -162,7 +162,6 @@ export const WATER_SURFACE_STYLES = String.raw`
    the expanding circular hole lets the host Conversation become visible below. */
 .wb-dsh-water[data-conversation-ripple="true"] {
   --wb-conversation-ripple-radius: 0px;
-  animation: wb-dsh-conversation-ripple 2660ms cubic-bezier(0.16, 1, 0.3, 1) both;
   pointer-events: none;
   -webkit-mask-image: radial-gradient(
     circle at var(--wb-conversation-ripple-x) var(--wb-conversation-ripple-y),
@@ -1538,15 +1537,6 @@ body[data-ds-dark-theme] .wb-dsh-water-composer-layer .wb-dsh-native-card {
 
 @keyframes wb-dsh-water-arrive {
   from { opacity: 0; }
-}
-
-@keyframes wb-dsh-conversation-ripple {
-  from {
-    --wb-conversation-ripple-radius: 0px;
-  }
-  to {
-    --wb-conversation-ripple-radius: 180vmax;
-  }
 }
 
 @keyframes wb-dsh-native-composer-enter {
