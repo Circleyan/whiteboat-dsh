@@ -434,12 +434,17 @@ export function DshWaterComposer(props: DshWaterComposerProps) {
 
   const submit = () => {
     if (disabled || !draft.trim() || !props.inputActions) return;
-    props.inputActions.submit();
-    document.dispatchEvent(new CustomEvent("whiteboat:idea-accepted"));
     const rect = cardRef.current?.getBoundingClientRect();
+    // Set the handoff state before DSH navigates to Conversation. The native
+    // submit can synchronously replace this composer, so doing this after it
+    // races the overlay unmount and leaves no frame for the shared ripple.
     props.onAccepted(rect
       ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
       : undefined);
+    window.requestAnimationFrame(() => {
+      props.inputActions.submit();
+      document.dispatchEvent(new CustomEvent("whiteboat:idea-accepted"));
+    });
   };
 
   return createPortal((

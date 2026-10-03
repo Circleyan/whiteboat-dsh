@@ -161,8 +161,21 @@ export const WATER_SURFACE_STYLES = String.raw`
    the centre of the native composer card. The water remains the only overlay;
    the expanding circular hole lets the host Conversation become visible below. */
 .wb-dsh-water[data-conversation-ripple="true"] {
+  --wb-conversation-ripple-radius: 0px;
   animation: wb-dsh-conversation-ripple 2660ms cubic-bezier(0.16, 1, 0.3, 1) both;
   pointer-events: none;
+  -webkit-mask-image: radial-gradient(
+    circle at var(--wb-conversation-ripple-x) var(--wb-conversation-ripple-y),
+    transparent 0,
+    transparent var(--wb-conversation-ripple-radius),
+    #000 calc(var(--wb-conversation-ripple-radius) + 1px)
+  );
+  mask-image: radial-gradient(
+    circle at var(--wb-conversation-ripple-x) var(--wb-conversation-ripple-y),
+    transparent 0,
+    transparent var(--wb-conversation-ripple-radius),
+    #000 calc(var(--wb-conversation-ripple-radius) + 1px)
+  );
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1529,16 +1542,10 @@ body[data-ds-dark-theme] .wb-dsh-water-composer-layer .wb-dsh-native-card {
 
 @keyframes wb-dsh-conversation-ripple {
   from {
-    -webkit-mask-image: radial-gradient(circle at var(--wb-conversation-ripple-x) var(--wb-conversation-ripple-y),
-      transparent 0, transparent 0, #000 1px);
-    mask-image: radial-gradient(circle at var(--wb-conversation-ripple-x) var(--wb-conversation-ripple-y),
-      transparent 0, transparent 0, #000 1px);
+    --wb-conversation-ripple-radius: 0px;
   }
   to {
-    -webkit-mask-image: radial-gradient(circle at var(--wb-conversation-ripple-x) var(--wb-conversation-ripple-y),
-      transparent 180vmax, #000 calc(180vmax + 1px));
-    mask-image: radial-gradient(circle at var(--wb-conversation-ripple-x) var(--wb-conversation-ripple-y),
-      transparent 180vmax, #000 calc(180vmax + 1px));
+    --wb-conversation-ripple-radius: 180vmax;
   }
 }
 
