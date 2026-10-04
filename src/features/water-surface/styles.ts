@@ -481,7 +481,7 @@ body[data-ds-dark-theme] .wb-dsh-water__boat-shadow {
   right: var(--wb-surface-pad-right);
   background: var(--wb-color-layer-02);
   border-color: var(--wb-color-border-subtle);
-  box-shadow: 0 0.35rem 0.9rem color-mix(in srgb, black 22%, transparent);
+  box-shadow: none;
 }
 
 body[data-ds-dark-theme] .wb-dsh-water__close,
@@ -489,7 +489,7 @@ body[data-ds-dark-theme] .wb-dsh-water__sound {
   color: var(--dsw-alias-label-primary, #f3f5f7);
   background: var(--dsw-alias-bg-layer-1, #202a33);
   border-color: rgba(120, 145, 164, 0.2);
-  box-shadow: 0 0.35rem 0.9rem rgba(0, 6, 12, 0.28);
+  box-shadow: none;
 }
 
 .wb-dsh-water__sound {
@@ -772,7 +772,7 @@ body[data-ds-dark-theme] .wb-dsh-water__sound {
   .wb-dsh-water-entry:hover {
     background: color-mix(in srgb, var(--wb-color-layer-02) 88%, var(--wb-color-text-primary));
     border-color: var(--wb-color-border-strong);
-    box-shadow: 0 0.45rem 1rem color-mix(in srgb, black 26%, transparent);
+    box-shadow: none;
   }
 
   body[data-ds-dark-theme] .wb-dsh-water__close:hover,
@@ -792,9 +792,7 @@ body[data-ds-dark-theme] .wb-dsh-water__sound {
 
 .wb-dsh-water__close:active,
 .wb-dsh-water__icon-button:active {
-  box-shadow:
-    inset 0 2px 4px color-mix(in srgb, black 18%, transparent),
-    inset 0 -1px 0 color-mix(in srgb, white 24%, transparent);
+  box-shadow: none;
 }
 
 .wb-dsh-water__close:focus-visible,
