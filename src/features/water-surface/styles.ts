@@ -5,6 +5,12 @@ export const WATER_SURFACE_STYLES = String.raw`
   initial-value: 0px;
 }
 
+@property --wb-conversation-ripple-outer {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
 .wb-dsh-water,
 .wb-dsh-water-entry,
 .wb-dsh-settings {
@@ -167,13 +173,13 @@ export const WATER_SURFACE_STYLES = String.raw`
     circle at var(--wb-conversation-ripple-x) var(--wb-conversation-ripple-y),
     transparent 0,
     transparent var(--wb-conversation-ripple-radius),
-    #000 calc(var(--wb-conversation-ripple-radius) + 1px)
+    #000 var(--wb-conversation-ripple-outer)
   );
   mask-image: radial-gradient(
     circle at var(--wb-conversation-ripple-x) var(--wb-conversation-ripple-y),
     transparent 0,
     transparent var(--wb-conversation-ripple-radius),
-    #000 calc(var(--wb-conversation-ripple-radius) + 1px)
+    #000 var(--wb-conversation-ripple-outer)
   );
 }
 

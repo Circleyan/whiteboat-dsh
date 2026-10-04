@@ -8,7 +8,7 @@ import {
 import {
   CANVAS_CREATION_WATER_IMPACT_DURATION_SECONDS,
   CANVAS_CREATION_WATER_IMPACT_FIRST_RING_DELAY_SECONDS,
-  resolveCanvasCreationWaterImpactRingRadius,
+  resolveCanvasCreationWaterImpactRevealBand,
   mountCanvasCreationWaterImpact,
   resolveCanvasCreationWaterImpactReach,
   resolveCanvasCreationWaterImpactScale,
@@ -278,8 +278,13 @@ function WaterSurface({
       // Match Obsidian's reveal timing to the shared impact curve: the hole
       // stays closed until the first ring delay, then follows the same
       // reach^1.05 expansion instead of an independent CSS easing curve.
-      const radius = resolveCanvasCreationWaterImpactRingRadius(elapsed, impactReach);
-      root.style.setProperty("--wb-conversation-ripple-radius", `${radius}px`);
+      const { inner, outer } = resolveCanvasCreationWaterImpactRevealBand(
+        elapsed,
+        impactReach,
+        scale,
+      );
+      root.style.setProperty("--wb-conversation-ripple-radius", `${inner}px`);
+      root.style.setProperty("--wb-conversation-ripple-outer", `${outer}px`);
       if (elapsed < CANVAS_CREATION_WATER_IMPACT_DURATION_SECONDS) {
         frame = window.requestAnimationFrame(tick);
       }
@@ -288,6 +293,7 @@ function WaterSurface({
     return () => {
       if (frame !== null) window.cancelAnimationFrame(frame);
       root.style.removeProperty("--wb-conversation-ripple-radius");
+      root.style.removeProperty("--wb-conversation-ripple-outer");
       impact.destroy();
       impactRef.current = null;
     };

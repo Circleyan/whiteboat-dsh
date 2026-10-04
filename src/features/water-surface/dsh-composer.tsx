@@ -8,6 +8,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import type { WaterSurfaceSnapshot } from "./surface-store";
+import { resolveCanvasCreationWaterImpactScale } from "whiteboat-core/water-impact";
 
 type SelectorHook<T> = <S>(selector: (snapshot: T) => S) => S;
 
@@ -439,7 +440,13 @@ export function DshWaterComposer(props: DshWaterComposerProps) {
     // submit can synchronously replace this composer, so doing this after it
     // races the overlay unmount and leaves no frame for the shared ripple.
     props.onAccepted(rect
-      ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+      ? (() => {
+        const scale = resolveCanvasCreationWaterImpactScale(rect.width);
+        return {
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height * 0.65 + 44 * scale,
+        };
+      })()
       : undefined);
     window.requestAnimationFrame(() => {
       props.inputActions.submit();
