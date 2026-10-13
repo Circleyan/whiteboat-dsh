@@ -321,9 +321,7 @@ function WaterSurface({
     const water = new CanvasCreationWaterField(canvas, {
       tokenRoot: root,
       reducedMotion: motionQuery.matches,
-      // Ease the flow to a stop under the composer and back again on close.
-      pauseDurationMs: 220,
-      resumeDurationMs: 320,
+      // Shared core owns the accepted composer/flow timing.
     });
     let boatRenderer: ReturnType<typeof mountDshBoatRenderer> | undefined;
     try {

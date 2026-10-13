@@ -135,8 +135,8 @@ describe("DSH composer focus veil", () => {
     expect(veil).toContain("z-index: 1;");
     expect(veil).not.toMatch(/opacity/);
     const source = read("../src/features/water-surface/index.tsx");
-    expect(source).toContain("pauseDurationMs: 220");
-    expect(source).toContain("resumeDurationMs: 320");
+    expect(source).not.toContain("pauseDurationMs: 220");
+    expect(source).not.toContain("resumeDurationMs: 320");
     expect(source).not.toContain("flowTimeScale");
     expect(source).toContain("water.setFlowPaused(focused)");
     expect(source).toContain("water.setMooring(waterFocusedRef.current && !target");

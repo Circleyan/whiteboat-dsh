@@ -1,4 +1,6 @@
-export const WATER_SURFACE_STYLES = String.raw`
+import { CANVAS_CREATION_WATER_PRESENTATION_CSS } from "whiteboat-core";
+
+export const WATER_SURFACE_STYLES = CANVAS_CREATION_WATER_PRESENTATION_CSS + String.raw`
 @property --wb-conversation-ripple-radius {
   syntax: "<length>";
   inherits: false;
