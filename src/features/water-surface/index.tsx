@@ -258,6 +258,7 @@ function WaterSurface({
       scale,
     );
     const impact = mountCanvasCreationWaterImpact(canvas, origin, {
+      createCanvas: () => canvas.ownerDocument.createElement("canvas"),
       accents: wake,
       visualScale: scale,
       reach: impactReach,
@@ -320,6 +321,8 @@ function WaterSurface({
     const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     const water = new CanvasCreationWaterField(canvas, {
       tokenRoot: root,
+      createProbe: (parent) => parent.ownerDocument.createElement("div"),
+      ownerWindow: window,
       reducedMotion: motionQuery.matches,
       // Shared core owns the accepted composer/flow timing.
     });

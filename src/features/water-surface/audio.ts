@@ -10,6 +10,7 @@ export function mountDshWaterAudio(root: HTMLElement, enabled: boolean, onState?
   const sound = new WhiteboatBoatSoundscape({
     enabled,
     source: BOAT_WATER_SOURCE,
+    timers: window,
     reducedMotion: motion.matches,
     createHowl: (options) => new Howl(options),
     onStateChange: (snapshot) => {
