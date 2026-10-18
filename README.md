@@ -21,7 +21,7 @@ After an explicit send, a circular ripple expands from the centre of the native 
 准备环境：Node.js `>=20.19` 与 pnpm。直接把 GitHub Release 中的预构建包安装到 DSH 的 `web` profile：
 
 ```sh
-pnpm dlx @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web add https://github.com/Circleyan/whiteboat-dsh/releases/download/v0.1.2/whiteboat-dsh-0.1.2.tgz
+pnpm dlx @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web add https://github.com/Circleyan/whiteboat-dsh/releases/download/v0.1.3/whiteboat-dsh-0.1.3.tgz
 ```
 
 然后启动 DSH：
