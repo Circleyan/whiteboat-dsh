@@ -342,7 +342,7 @@ describe("shared Whiteboat water interaction", () => {
     );
     expect(composerSource).toContain('aria-label="命令"');
     expect(composerSource).toContain("DSH_COMMAND_CHOICES");
-    expect(composerSource).toContain('role="menu" aria-label="DSH 命令"');
+    expect(composerSource).toContain('role="group" aria-label="DSH 命令"');
     expect(composerSource).toContain("props.keyboard?.setDraft(next");
     expect(composerSource).toContain("访问模式，当前：");
     expect(composerSource).toContain("选择模型，当前");

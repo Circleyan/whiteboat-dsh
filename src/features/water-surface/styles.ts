@@ -1287,7 +1287,7 @@ body[data-ds-dark-theme] .wb-dsh-water-composer-layer .wb-dsh-native-card {
 
 .wb-dsh-native-menu > button:hover,
 .wb-dsh-native-menu section > button:hover,
-.wb-dsh-native-menu button[aria-checked="true"] {
+.wb-dsh-native-menu button[aria-pressed="true"] {
   background: var(--wb-native-hover);
 }
 

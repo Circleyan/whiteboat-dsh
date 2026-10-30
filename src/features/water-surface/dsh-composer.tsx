@@ -1,10 +1,12 @@
 import {
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
   type CSSProperties,
   type ReactNode,
+  type Ref,
 } from "react";
 import { createPortal } from "react-dom";
 import type { WaterSurfaceSnapshot } from "./surface-store";
@@ -172,12 +174,16 @@ function AccessControl({
   command,
   open,
   onOpenChange,
+  triggerRef,
+  panelId,
 }: {
   value: PermissionStateLike | undefined;
   disabled: boolean;
   command?: (line: string) => Promise<boolean>;
   open: boolean;
   onOpenChange(open: boolean): void;
+  triggerRef: Ref<HTMLButtonElement>;
+  panelId: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [confirmFull, setConfirmFull] = useState<string | null>(null);
@@ -203,18 +209,19 @@ function AccessControl({
   return (
     <div className="wb-dsh-native-control" data-open={open || undefined}>
       <button
+        ref={triggerRef}
         type="button"
         className="wb-dsh-native-trigger"
         aria-label={`访问模式，当前：${label}`}
-        aria-haspopup="menu"
         aria-expanded={open}
+        aria-controls={open ? panelId : undefined}
         disabled={disabled || busy || !command}
         onClick={() => onOpenChange(!open)}
       >
         <span>{label}</span><Icon name="chevron" />
       </button>
       {open && (
-        <div className="wb-dsh-native-menu" role="menu" aria-label="访问模式">
+        <div id={panelId} className="wb-dsh-native-menu" role="group" aria-label="访问模式">
           {confirmFull ? (
             <div className="wb-dsh-native-confirm">
               <strong>启用 Full access？</strong>
@@ -227,8 +234,7 @@ function AccessControl({
           ) : value.options.filter((option) => option.value !== "custom").map((option) => (
             <button
               type="button"
-              role="menuitemradio"
-              aria-checked={option.value === value.currentValue}
+              aria-pressed={option.value === value.currentValue}
               key={option.value}
               title={option.description}
               onClick={() => {
@@ -253,6 +259,8 @@ function ModelControl({
   select,
   open,
   onOpenChange,
+  triggerRef,
+  panelId,
 }: {
   state: ModelDirectoryStateLike;
   disabled: boolean;
@@ -260,6 +268,8 @@ function ModelControl({
   select?: (selection: ModelSelectionLike) => Promise<boolean>;
   open: boolean;
   onOpenChange(open: boolean): void;
+  triggerRef: Ref<HTMLButtonElement>;
+  panelId: string;
 }) {
   const [pane, setPane] = useState<"root" | "model" | "effort">("root");
   useEffect(() => {
@@ -284,13 +294,14 @@ function ModelControl({
   return (
     <div className="wb-dsh-native-control wb-dsh-native-model" data-open={open || undefined}>
       <button
+        ref={triggerRef}
         type="button"
         className="wb-dsh-native-trigger"
         aria-label={effortLabel
           ? `选择模型，当前 ${modelLabel}，推理等级 ${effortLabel}`
           : `选择模型，当前 ${modelLabel}`}
-        aria-haspopup="menu"
         aria-expanded={open}
+        aria-controls={open ? panelId : undefined}
         disabled={disabled || !select}
         onClick={() => {
           if (!open) load?.();
@@ -303,14 +314,14 @@ function ModelControl({
         <Icon name="chevron" />
       </button>
       {open && (
-        <div className="wb-dsh-native-menu wb-dsh-native-model-menu" role="menu" aria-label="模型与推理等级">
+        <div id={panelId} className="wb-dsh-native-menu wb-dsh-native-model-menu" role="group" aria-label="模型与推理等级">
           {pane === "root" && (
             <>
-              <button type="button" role="menuitem" onClick={() => setPane("model")}>
+              <button type="button" onClick={() => setPane("model")}>
                 <span>模型</span><span>{modelLabel} ›</span>
               </button>
               {reasoning && (
-                <button type="button" role="menuitem" onClick={() => setPane("effort")}>
+                <button type="button" onClick={() => setPane("effort")}>
                   <span>推理等级</span><span>{effortLabel ?? "Default"} ›</span>
                 </button>
               )}
@@ -328,8 +339,7 @@ function ModelControl({
                     return (
                       <button
                         type="button"
-                        role="menuitemradio"
-                        aria-checked={selected}
+                        aria-pressed={selected}
                         key={model.id}
                         onClick={() => void choose({
                           provider: group.id,
@@ -353,8 +363,7 @@ function ModelControl({
               {reasoning.efforts.map((effort) => (
                 <button
                   type="button"
-                  role="menuitemradio"
-                  aria-checked={effort.id === effortId}
+                  aria-pressed={effort.id === effortId}
                   key={effort.id}
                   title={effort.description}
                   onClick={() => void choose({
@@ -386,6 +395,14 @@ export function DshWaterComposer(props: DshWaterComposerProps) {
   const agentPreset = props.useAgentPresetSeat((state) => state);
   const permissions = props.useProjection<PermissionStateLike>("permissions", (value) => value) as PermissionStateLike | undefined;
   const [openMenu, setOpenMenu] = useState<ComposerMenu | null>(null);
+  const disclosureId = useId();
+  const triggerRefs = useRef<Record<ComposerMenu, HTMLButtonElement | null>>({
+    workspace: null,
+    preset: null,
+    command: null,
+    access: null,
+    model: null,
+  });
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
   const loadModelsRef = useRef(props.loadModels);
@@ -424,11 +441,25 @@ export function DshWaterComposer(props: DshWaterComposerProps) {
       if (event.key !== "Escape") return;
       event.preventDefault();
       event.stopPropagation();
+      if (openMenu) {
+        setOpenMenu(null);
+        const trigger = triggerRefs.current[openMenu];
+        const input = inputRef.current;
+        const focusTarget = trigger && !trigger.disabled
+          ? trigger
+          : input && !input.disabled
+            ? input
+            : cardRef.current?.querySelector<HTMLButtonElement>(
+              "button:not(:disabled):not(.wb-dsh-native-menu button)",
+            );
+        focusTarget?.focus({ preventScroll: true });
+        return;
+      }
       props.onDismiss();
     };
     window.addEventListener("keydown", onEscape, true);
     return () => window.removeEventListener("keydown", onEscape, true);
-  }, [props.onDismiss, ready]);
+  }, [openMenu, props.onDismiss, ready]);
 
   if (!ready) return null;
 
@@ -460,22 +491,22 @@ export function DshWaterComposer(props: DshWaterComposerProps) {
       <div className="wb-dsh-native-context" aria-label="DSH 会话上下文">
         <div className="wb-dsh-native-control" data-open={workspaceOpen || undefined}>
           <button
+            ref={(node) => { triggerRefs.current.workspace = node; }}
             type="button"
             className="wb-dsh-native-context-trigger"
             aria-label="选择工作区"
-            aria-haspopup="menu"
             aria-expanded={workspaceOpen}
+            aria-controls={workspaceOpen ? `${disclosureId}-workspace` : undefined}
             onClick={() => setOpenMenu(workspaceOpen ? null : "workspace")}
           >
             <Icon name="folder" /><span>{activeWorkspace?.title ?? activeWorkspace?.path ?? "选择工作区"}</span><Icon name="chevron" />
           </button>
           {workspaceOpen && (
-            <div className="wb-dsh-native-menu" role="menu" aria-label="工作区">
+            <div id={`${disclosureId}-workspace`} className="wb-dsh-native-menu" role="group" aria-label="工作区">
               {workspaces.items.map((workspace) => (
                 <button
                   type="button"
-                  role="menuitemradio"
-                  aria-checked={workspace.workspaceId === activeWorkspace?.workspaceId}
+                  aria-pressed={workspace.workspaceId === activeWorkspace?.workspaceId}
                   key={workspace.workspaceId}
                   onClick={() => {
                     setOpenMenu(null);
@@ -492,23 +523,23 @@ export function DshWaterComposer(props: DshWaterComposerProps) {
         {agentPreset.options.length > 0 && (
           <div className="wb-dsh-native-control" data-open={presetOpen || undefined}>
             <button
+              ref={(node) => { triggerRefs.current.preset = node; }}
               type="button"
               className="wb-dsh-native-context-trigger"
               aria-label={`Agent preset，当前：${activePreset?.name ?? agentPreset.current}`}
-              aria-haspopup="menu"
               aria-expanded={presetOpen}
+              aria-controls={presetOpen ? `${disclosureId}-preset` : undefined}
               disabled={agentPreset.busy}
               onClick={() => setOpenMenu(presetOpen ? null : "preset")}
             >
               <Icon name="spark" /><span>{activePreset?.name ?? agentPreset.current}</span><Icon name="chevron" />
             </button>
             {presetOpen && (
-              <div className="wb-dsh-native-menu" role="menu" aria-label="Agent preset">
+              <div id={`${disclosureId}-preset`} className="wb-dsh-native-menu" role="group" aria-label="Agent preset">
                 {agentPreset.options.map((option) => (
                   <button
                     type="button"
-                    role="menuitemradio"
-                    aria-checked={option.id === agentPreset.current}
+                    aria-pressed={option.id === agentPreset.current}
                     key={option.id}
                     title={option.description}
                     onClick={() => {
@@ -532,6 +563,7 @@ export function DshWaterComposer(props: DshWaterComposerProps) {
           className="wb-dsh-native-input"
           value={draft}
           rows={2}
+          aria-label="消息内容"
           placeholder={props.placeholder ?? "描述你想要构建的内容"}
           disabled={disabled && !machineBusy}
           readOnly={machineBusy}
@@ -554,20 +586,20 @@ export function DshWaterComposer(props: DshWaterComposerProps) {
           <div className="wb-dsh-native-tools">
             <div className="wb-dsh-native-control" data-open={commandOpen || undefined}>
               <button
+                ref={(node) => { triggerRefs.current.command = node; }}
                 type="button"
                 className="wb-dsh-native-plus"
                 aria-label="命令"
-                aria-haspopup="menu"
                 aria-expanded={commandOpen}
+                aria-controls={commandOpen ? `${disclosureId}-command` : undefined}
                 disabled={disabled || !props.keyboard}
                 onClick={() => setOpenMenu(commandOpen ? null : "command")}
               ><Icon name="plus" /></button>
               {commandOpen && (
-                <div className="wb-dsh-native-menu wb-dsh-native-command-menu" role="menu" aria-label="DSH 命令">
+                <div id={`${disclosureId}-command`} className="wb-dsh-native-menu wb-dsh-native-command-menu" role="group" aria-label="DSH 命令">
                   {DSH_COMMAND_CHOICES.map((choice) => (
                     <button
                       type="button"
-                      role="menuitem"
                       key={choice.id}
                       onMouseDown={(event) => event.preventDefault()}
                       onClick={() => {
@@ -597,6 +629,8 @@ export function DshWaterComposer(props: DshWaterComposerProps) {
               command={props.command}
               open={openMenu === "access"}
               onOpenChange={(open) => setOpenMenu(open ? "access" : null)}
+              triggerRef={(node) => { triggerRefs.current.access = node; }}
+              panelId={`${disclosureId}-access`}
             />
             {props.leftItems}
           </div>
@@ -609,6 +643,8 @@ export function DshWaterComposer(props: DshWaterComposerProps) {
               select={props.selectModel}
               open={openMenu === "model"}
               onOpenChange={(open) => setOpenMenu(open ? "model" : null)}
+              triggerRef={(node) => { triggerRefs.current.model = node; }}
+              panelId={`${disclosureId}-model`}
             />
             <button
               type="button"
