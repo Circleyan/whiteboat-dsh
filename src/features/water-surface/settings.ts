@@ -3,18 +3,25 @@ import {
   normalizeCanvasCreationBoatFollowSpeed,
 } from "whiteboat-core/navigation";
 
+import { CANVAS_WATER_SCALE_LIMITS, normalizeCanvasWaterScale } from "whiteboat-core/disc-water";
+
+export { normalizeCanvasWaterScale as normalizeDshWaterScale };
+export const DSH_WATER_SCALE_LIMITS = CANVAS_WATER_SCALE_LIMITS;
+
 export const WHITEBOAT_DSH_SETTINGS_NAMESPACE = "whiteboat-dsh";
 
 export const DSH_BOAT_FOLLOW_SPEED_LIMITS =
-  CANVAS_CREATION_BOAT_FOLLOW_SPEED_LIMITS;
+  Object.freeze({ ...CANVAS_CREATION_BOAT_FOLLOW_SPEED_LIMITS, defaultValue: 0.6 });
 
 export interface WhiteboatDshSettings {
   boatFollowSpeed: number;
   soundEnabled?: boolean;
+  waterScale: number;
 }
 
 export const DEFAULT_WHITEBOAT_DSH_SETTINGS: WhiteboatDshSettings = Object.freeze({
   boatFollowSpeed: DSH_BOAT_FOLLOW_SPEED_LIMITS.defaultValue,
+  waterScale: DSH_WATER_SCALE_LIMITS.defaultValue,
 });
 
 export function normalizeDshBoatFollowSpeed(
@@ -33,6 +40,7 @@ export function decodeWhiteboatDshSettings(
   const candidate = value as Partial<WhiteboatDshSettings>;
   const decoded: WhiteboatDshSettings = {
     boatFollowSpeed: normalizeDshBoatFollowSpeed(candidate.boatFollowSpeed),
+    waterScale: normalizeCanvasWaterScale(candidate.waterScale),
   };
   if (typeof candidate.soundEnabled === "boolean") decoded.soundEnabled = candidate.soundEnabled;
   return decoded;

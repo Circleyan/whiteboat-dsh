@@ -17,3 +17,10 @@ Audio runtime checks measure nonzero Web Audio output, the 57-second boundary,
 mute persistence, teardown and visibility-event suspension. Human listening,
 physical-device autoplay/background behavior, and credentialed Prompt handoff
 remain separate acceptance items.
+
+2026-11-06 disc update: `whiteboat-core/disc-water` owns the accepted GPU
+material, bounded settings, scheduling and fallback. DSH supplies its theme
+predicate, DOM probe and live persisted `waterScale` (90%, 50%–200%). New
+boat speed defaults to 60%; existing values and mute survive decoding. The
+water layer is transparent above the DSH surface. Package/runtime evidence:
+`whiteboat/90 验收/2026-11-06-DSH圆盘水面同步/`.

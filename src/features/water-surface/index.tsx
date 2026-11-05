@@ -1,7 +1,7 @@
+import { DiscWaterField } from "whiteboat-core/disc-water";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { SettingsScope } from "@deepseek-ai/dsh-client-runtime/client";
 import {
-  CanvasCreationWaterField,
   clampWaterValue,
   type CanvasCreationWaterBoat,
 } from "whiteboat-core/water-field";
@@ -42,6 +42,7 @@ import {
   WHITEBOAT_DSH_SETTINGS_NAMESPACE,
   decodeWhiteboatDshSettings,
   normalizeDshBoatFollowSpeed,
+  normalizeDshWaterScale,
   type WhiteboatDshSettings,
 } from "./settings";
 import { WATER_SURFACE_STYLES } from "./styles";
@@ -181,6 +182,11 @@ function WaterSurface({
   const boatFollowSpeed = normalizeDshBoatFollowSpeed(
     preferencesSnapshot.value?.boatFollowSpeed,
   );
+  const waterScale = normalizeDshWaterScale(preferencesSnapshot.value?.waterScale);
+  const waterScaleRef = useRef(waterScale);
+  waterScaleRef.current = waterScale;
+  const waterFieldRef = useRef<DiscWaterField | null>(null);
+  useEffect(() => { waterFieldRef.current?.refreshSettings(); }, [waterScale]);
   const open = useSurface((state) => state.open);
   const composerOpen = useSurface((state) => state.composerOpen);
   const composerClosing = useSurface((state) => state.composerClosing);
@@ -319,13 +325,20 @@ function WaterSurface({
     }
 
     const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const water = new CanvasCreationWaterField(canvas, {
+    const water = new DiscWaterField(canvas, {
       tokenRoot: root,
       createProbe: (parent) => parent.ownerDocument.createElement("div"),
       ownerWindow: window,
       reducedMotion: motionQuery.matches,
-      // Shared core owns the accepted composer/flow timing.
+      isDark: () => document.body.hasAttribute("data-ds-dark-theme"),
+      transparentBackground: true,
+      getWaterScale: () => waterScaleRef.current,
+      maxFps: 30,
+      maxPixels: 2_000_000,
+      maxDpr: 1.5,
+      // Shared core owns the accepted material and composer/flow timing.
     });
+    waterFieldRef.current = water;
     let boatRenderer: ReturnType<typeof mountDshBoatRenderer> | undefined;
     try {
       boatRenderer = mountDshBoatRenderer(boatCanvas, boatEl);
@@ -757,6 +770,7 @@ function WaterSurface({
       setWaterFocusRef.current = null;
       delete root.dataset.waterFocus;
       if (projectionFrame !== null) window.cancelAnimationFrame(projectionFrame);
+      waterFieldRef.current = null;
       water.destroy();
       themeObserver.disconnect();
       document.removeEventListener("visibilitychange", scheduleProjection);

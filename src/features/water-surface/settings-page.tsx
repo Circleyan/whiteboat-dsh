@@ -10,6 +10,8 @@ import type {
 } from "@deepseek-ai/dsh-client-runtime/client";
 import {
   DSH_BOAT_FOLLOW_SPEED_LIMITS,
+  DSH_WATER_SCALE_LIMITS,
+  normalizeDshWaterScale,
   normalizeDshBoatFollowSpeed,
   type WhiteboatDshSettings,
 } from "./settings";
@@ -37,6 +39,10 @@ export function DshWaterSettingsPage({
 }: DshWaterSettingsPageProps) {
   const snapshot = useWhiteboatDshSettings(preferences);
   const [draft, setDraft] = useState<number | undefined>();
+  const [scaleDraft, setScaleDraft] = useState<number | undefined>();
+  const [scaleError, setScaleError] = useState(false);
+  const scaleGeneration = useRef(0);
+  const waterScale = scaleDraft ?? normalizeDshWaterScale(snapshot.value?.waterScale);
   const [writeError, setWriteError] = useState(false);
   const [soundError, setSoundError] = useState(false);
   const [soundSaving, setSoundSaving] = useState(false);
@@ -63,6 +69,15 @@ export function DshWaterSettingsPage({
     }
   };
 
+  const updateScale = async (value: number) => {
+    const next = normalizeDshWaterScale(value);
+    const generation = ++scaleGeneration.current;
+    setScaleDraft(next); setScaleError(false);
+    try { await preferences.set("waterScale", next); }
+    catch { if (generation === scaleGeneration.current) setScaleError(true); }
+    finally { if (generation === scaleGeneration.current) setScaleDraft(undefined); }
+  };
+
   const status = writeError
     ? "还没能保存。请稍后再试。"
     : snapshot.status === "loading"
@@ -78,8 +93,26 @@ export function DshWaterSettingsPage({
       <header className="wb-dsh-settings__header">
         <p className="wb-dsh-settings__eyebrow">白舟</p>
         <h2 id="wb-dsh-settings-title">水面</h2>
-        <p>调整小船的航行手感和轻柔水声。</p>
+        <p>调整水纹大小、小船的航行手感和轻柔水声。</p>
       </header>
+      <div className="wb-dsh-settings__row">
+        <div className="wb-dsh-settings__copy">
+          <label htmlFor="wb-dsh-water-scale">水纹大小</label>
+          <span>默认 90%，可在 50% 到 200% 之间调整。</span>
+        </div>
+        <output className="wb-dsh-settings__value" htmlFor="wb-dsh-water-scale" aria-live="polite">
+          {Math.round(waterScale * 100)}%
+        </output>
+        <input id="wb-dsh-water-scale" type="range"
+          min={DSH_WATER_SCALE_LIMITS.min} max={DSH_WATER_SCALE_LIMITS.max}
+          step={DSH_WATER_SCALE_LIMITS.step} value={waterScale} disabled={!writable}
+          aria-describedby="wb-dsh-water-scale-status"
+          onChange={(event) => void updateScale(Number(event.currentTarget.value))} />
+        <p id="wb-dsh-water-scale-status" className="wb-dsh-settings__status"
+          data-error={scaleError || undefined} aria-live="polite">
+          {scaleError ? "水纹大小没有保存，请再试一次。" : "保存后立即用于水面。"}
+        </p>
+      </div>
       <div className="wb-dsh-settings__row">
         <div className="wb-dsh-settings__copy">
           <label htmlFor="wb-dsh-water-sound">水面音效</label>
@@ -99,7 +132,7 @@ export function DshWaterSettingsPage({
       <div className="wb-dsh-settings__row">
         <div className="wb-dsh-settings__copy">
           <label htmlFor="wb-dsh-boat-follow-speed">小船跟随速度</label>
-          <span>默认 100%，可在 50% 到 200% 之间调整。</span>
+          <span>默认 60%，可在 50% 到 200% 之间调整。</span>
         </div>
         <output
           className="wb-dsh-settings__value"

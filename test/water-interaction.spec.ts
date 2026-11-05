@@ -58,15 +58,16 @@ describe("shared Whiteboat water interaction", () => {
       min: 0.5,
       max: 2,
       step: 0.05,
-      defaultValue: 1,
+      defaultValue: 0.6,
     });
-    expect(DEFAULT_WHITEBOAT_DSH_SETTINGS).toEqual({ boatFollowSpeed: 1 });
-    expect(normalizeDshBoatFollowSpeed(undefined)).toBe(1);
+    expect(DEFAULT_WHITEBOAT_DSH_SETTINGS).toEqual({ boatFollowSpeed: 0.6, waterScale: 0.9 });
+    expect(normalizeDshBoatFollowSpeed(undefined)).toBe(0.6);
     expect(normalizeDshBoatFollowSpeed(0.49)).toBe(0.5);
     expect(normalizeDshBoatFollowSpeed(1.26)).toBe(1.25);
     expect(normalizeDshBoatFollowSpeed(2.1)).toBe(2);
     expect(decodeWhiteboatDshSettings({ boatFollowSpeed: 1.74 })).toEqual({
       boatFollowSpeed: 1.75,
+      waterScale: 0.9,
     });
     expect(decodeWhiteboatDshSettings(null)).toBeUndefined();
   });
