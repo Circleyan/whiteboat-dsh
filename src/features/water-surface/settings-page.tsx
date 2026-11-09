@@ -91,9 +91,13 @@ export function DshWaterSettingsPage({
   return (
     <section className="wb-dsh-settings" aria-labelledby="wb-dsh-settings-title">
       <header className="wb-dsh-settings__header">
-        <p className="wb-dsh-settings__eyebrow">白舟</p>
+        <p className="wb-dsh-settings__eyebrow">白舟 Whiteboat</p>
         <h2 id="wb-dsh-settings-title">水面</h2>
-        <p>调整水纹大小、小船的航行手感和轻柔水声。</p>
+        <p>在开始工作前留一点空白，让尚未定形的想法慢慢浮现。</p>
+        <nav className="wb-dsh-settings__links" aria-label="了解白舟 Whiteboat">
+          <a href="https://github.com/Circleyan/whiteboat-dsh" target="_blank" rel="noopener noreferrer">项目与使用说明</a>
+          <a href="https://dshplugin.app/plugins/whiteboat-dsh" target="_blank" rel="noopener noreferrer">DSH 社区页面</a>
+        </nav>
       </header>
       <div className="wb-dsh-settings__row">
         <div className="wb-dsh-settings__copy">

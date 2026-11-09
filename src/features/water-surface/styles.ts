@@ -1384,7 +1384,7 @@ body[data-ds-dark-theme] .wb-dsh-water-composer-layer .wb-dsh-native-card {
   font-size: var(--wb-type-label-size);
   font-weight: var(--wb-f-weight-medium);
   letter-spacing: 0.08em;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .wb-dsh-settings__header > p:last-child,
@@ -1603,5 +1603,29 @@ body[data-ds-dark-theme] .wb-dsh-water-composer-layer .wb-dsh-native-card {
     opacity: 0.5;
     transform: translate3d(26%, 3%, 0) scale(1.08);
   }
+}
+
+.wb-dsh-water-entry span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-dsh-settings__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wb-f-space-03) var(--wb-f-space-05);
+  font-size: var(--wb-type-label-size);
+}
+
+.wb-dsh-settings__links a {
+  color: var(--wb-color-text-primary);
+  text-underline-offset: 0.2em;
+}
+
+.wb-dsh-settings__links a:focus-visible {
+  outline: 2px solid var(--wb-color-focus);
+  outline-offset: 2px;
 }
 `;

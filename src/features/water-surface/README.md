@@ -24,3 +24,8 @@ predicate, DOM probe and live persisted `waterScale` (90%, 50%–200%). New
 boat speed defaults to 60%; existing values and mute survive decoding. The
 water layer is transparent above the DSH surface. Package/runtime evidence:
 `whiteboat/90 验收/2026-11-06-DSH圆盘水面同步/`.
+
+2026-11-09 discovery: the native sidebar entry names 白舟 Whiteboat with a
+matching accessible name and compact-mode tooltip. The native settings page
+links to the project and independent DSH community listing. Branding stays
+outside the water scene; no Logo asset, telemetry or automatic navigation is added.

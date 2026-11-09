@@ -887,12 +887,13 @@ function WaterSurfaceEntry({ wide, useSurface, onOpen }: EntryInjected) {
       type="button"
       className="wb-dsh-water-entry"
       data-wide={String(wide)}
-      aria-label={open ? "水面已打开" : "打开水面"}
+      aria-label={open ? "白舟 Whiteboat 水面已打开" : "打开白舟 Whiteboat 水面"}
+      title="白舟 Whiteboat · 水面"
       aria-pressed={open}
       onClick={onOpen}
     >
       <Icon name="water" />
-      {wide && <span>水面</span>}
+      {wide && <span>白舟 Whiteboat</span>}
     </button>
   );
 }
@@ -1050,7 +1051,7 @@ export function apply(ctx: ClientContextLike): void {
     name: "sidebar.footer.action",
     id: "whiteboat-water-surface-entry",
     order: 30,
-    label: "水面",
+    label: "白舟 Whiteboat",
     inject: () => ({
       hooks: { surface },
       onOpen: openSurface,

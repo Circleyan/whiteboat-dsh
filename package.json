@@ -1,7 +1,7 @@
 {
   "name": "whiteboat-dsh",
   "version": "0.2.0",
-  "description": "Whiteboat for DeepSeek Harness. The first release begins with a quiet water surface.",
+  "description": "Whiteboat / 白舟 — a quiet water surface for starting work in DeepSeek Harness, with a pointer-guided boat, gentle water sounds and native DSH input.",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
