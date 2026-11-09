@@ -27,5 +27,10 @@ water layer is transparent above the DSH surface. Package/runtime evidence:
 
 2026-11-09 discovery: the native sidebar entry names 白舟 Whiteboat with a
 matching accessible name and compact-mode tooltip. The native settings page
-links to the project and independent DSH community listing. Branding stays
-outside the water scene; no Logo asset, telemetry or automatic navigation is added.
+links to the project and independent DSH community listing.
+
+2026-11-09 Logo revision: the upper-left mark and colored wordmark reuse the
+approved Obsidian Home artwork through `whiteboat-core/logo-assets`. DSH owns
+placement, compact sizing and its light/dark selector. Phone mode hides the
+group; narrow desktop surfaces hide the wordmark. The static group does not
+intercept water input or start a Session. Community exposure remains deferred.

@@ -450,6 +450,57 @@ body[data-ds-dark-theme] .wb-dsh-water__boat-shadow {
   height: auto;
 }
 
+.wb-dsh-water__brand {
+  position: absolute;
+  z-index: 4;
+  top: var(--wb-surface-pad-top);
+  left: var(--wb-surface-pad-left);
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.5065rem;
+  pointer-events: none;
+}
+
+.wb-dsh-water__brand-mark {
+  display: block;
+  width: 34.032px;
+  height: 32px;
+}
+
+.wb-dsh-water__brand-wordmark {
+  display: block;
+  width: 156.95px;
+  height: 26.777px;
+}
+
+.wb-dsh-water__brand .is-dark,
+body[data-ds-dark-theme] .wb-dsh-water__brand .is-light {
+  display: none;
+}
+
+body[data-ds-dark-theme] .wb-dsh-water__brand .is-dark {
+  display: block;
+}
+
+@media (max-width: 48rem), (max-height: 36rem) {
+  .wb-dsh-water__brand { gap: var(--wb-f-space-03); }
+  .wb-dsh-water__brand-mark { width: 1.5953rem; height: 1.5rem; }
+  .wb-dsh-water__brand-wordmark { width: 7.357rem; height: 1.255rem; }
+}
+
+/* Kept after theme selection so narrow dark surfaces also hide the wordmark. */
+@media (max-width: 34rem) {
+  .wb-dsh-water__brand .wb-dsh-water__brand-wordmark,
+  body[data-ds-dark-theme] .wb-dsh-water__brand .wb-dsh-water__brand-wordmark {
+    display: none;
+  }
+}
+
+.wb-dsh-water[data-device-mode="phone"] .wb-dsh-water__brand {
+  display: none;
+}
+
 .wb-dsh-water__close,
 .wb-dsh-water__icon-button,
 .wb-dsh-water__send,

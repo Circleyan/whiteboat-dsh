@@ -427,16 +427,12 @@ describe("shared Whiteboat water interaction", () => {
     expect(clientSource).not.toContain("onRevealComposer");
     expect(clientSource).toContain("CANVAS_CREATION_BOAT_ASSETS");
     expect(clientSource).not.toContain("CANVAS_CREATION_ENTRY_ASSETS");
-    expect(clientSource).not.toContain("logoMark");
-    expect(clientSource).not.toContain("logoWordmark");
-    expect(clientSource).not.toContain("wb-dsh-water__brand");
-    expect(clientSource).not.toContain('aria-label="Whiteboat"');
+    expect(clientSource).toContain('from "whiteboat-core/logo-assets"');
     const stylesSource = readFileSync(
       fileURLToPath(new URL("../src/features/water-surface/styles.ts", import.meta.url)),
       "utf8",
     );
     expect(stylesSource).not.toContain("--wb-brand-opacity");
-    expect(stylesSource).not.toContain(".wb-dsh-water__brand");
     expect(boatHullSvg).not.toContain("fill-opacity");
   });
 });

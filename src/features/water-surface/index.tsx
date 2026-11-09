@@ -21,6 +21,7 @@ import {
   type CanvasCreationEntryDeviceMode,
 } from "whiteboat-core/navigation";
 import { CANVAS_CREATION_BOAT_ASSETS } from "whiteboat-core/boat-assets";
+import { WHITEBOAT_LOGO_ASSETS } from "whiteboat-core/logo-assets";
 import type { WhiteboatSoundState } from "whiteboat-core/boat-water-sound";
 import { mountDshWaterAudio } from "./audio";
 import { applyDshCelestialProjection } from "./celestial-light";
@@ -811,6 +812,12 @@ function WaterSurface({
       } as CSSProperties}
     >
       <canvas className="wb-dsh-water__field" ref={setCanvas} aria-hidden="true" />
+      <div className="wb-dsh-water__brand" role="img" aria-label="Whiteboat">
+        <img className="wb-dsh-water__brand-mark is-light" src={WHITEBOAT_LOGO_ASSETS.logoMark} alt="" aria-hidden="true" />
+        <img className="wb-dsh-water__brand-mark is-dark" src={WHITEBOAT_LOGO_ASSETS.logoMarkDark} alt="" aria-hidden="true" />
+        <img className="wb-dsh-water__brand-wordmark is-light" src={WHITEBOAT_LOGO_ASSETS.logoWordmark} alt="" aria-hidden="true" />
+        <img className="wb-dsh-water__brand-wordmark is-dark" src={WHITEBOAT_LOGO_ASSETS.logoWordmarkDark} alt="" aria-hidden="true" />
+      </div>
       {/* Progressive blur above the water, below the boat and composer. */}
       <div className="wb-dsh-water__focus-veil" ref={setFocusVeil} aria-hidden="true">
         <span className="wb-dsh-water__focus-layer" data-layer="near" />
