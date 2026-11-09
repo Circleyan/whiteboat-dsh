@@ -4,7 +4,7 @@ Whiteboat is growing in the DeepSeek Harness ecosystem. The `0.2.x` release begi
 
 ## First slice: water surface
 
-The first slice opens an unbranded water surface where you can pause or type before beginning a real DSH Session. Merely looking at the surface creates no Session, Prompt, AI call, or write. Opening the composer prepares at most one blank Session; only an explicit non-empty send admits a Prompt.
+The first slice opens a quiet water surface where you can pause or type before beginning a real DSH Session. Its upper-left Logo and colored wordmark match Whiteboat Home, with light/dark variants; narrow screens hide the wordmark and phones hide the group. Merely looking at the surface creates no Session, Prompt, AI call, or write. Opening the composer prepares at most one blank Session; only an explicit non-empty send admits a Prompt.
 
 The surface reuses Whiteboat's shared water field, boat, pointer navigation, mobile roaming, wake intensity, and celestial projection. Its composer, Workspace, Agent preset, commands, permissions, model, reasoning level, draft, and send lifecycle remain native to DSH.
 
@@ -13,6 +13,10 @@ The water surface includes the same gentle, offline water recording used by Whit
 After an explicit send, a circular ripple expands from the centre of the native Conversation composer, then the water surface yields to DSH's native Conversation detail. Messages, run phases, tools, and agents stay in DSH's detail surface. Obsidian's ripple is a Canvas-node context surface and does not become a DSH node view; this package does not copy Canvas nodes, edges, or ripple state.
 
 ## Settings / 配置
+
+### 0.2.0 更新
+
+用 shader 重写了水面。
 
 打开 DSH 设置，在“白舟”页面可调整“小船跟随速度”。新设置默认值为 `60%`，已有保存值保留，可在 `50%` 到 `200%` 之间调整；修改后会立即用于指针跟随、点击或触控目的地以及手机漫游，并保存在 DSH 的设置文档中。该设置只改变小船的航行速度，不改变水面、投影、Canvas 或 Session 语义。
 
