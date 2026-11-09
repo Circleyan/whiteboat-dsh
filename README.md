@@ -1,6 +1,6 @@
 # Whiteboat for DeepSeek Harness
 
-Whiteboat is growing in the DeepSeek Harness ecosystem. The `0.1.x` release begins with a quiet water surface; later Whiteboat capabilities will join this same package instead of becoming separate top-level repositories.
+Whiteboat is growing in the DeepSeek Harness ecosystem. The `0.2.x` release begins with a quiet water surface; later Whiteboat capabilities will join this same package instead of becoming separate top-level repositories.
 
 ## First slice: water surface
 
@@ -14,23 +14,21 @@ After an explicit send, a circular ripple expands from the centre of the native 
 
 ## Settings / 配置
 
-打开 DSH 设置，在“白舟”页面可调整“小船跟随速度”。默认值为 `100%`，可在 `50%` 到 `200%` 之间调整；修改后会立即用于指针跟随、点击或触控目的地以及手机漫游，并保存在 DSH 的设置文档中。该设置只改变小船的航行速度，不改变水面、投影、Canvas 或 Session 语义。
+打开 DSH 设置，在“白舟”页面可调整“小船跟随速度”。新设置默认值为 `60%`，已有保存值保留，可在 `50%` 到 `200%` 之间调整；修改后会立即用于指针跟随、点击或触控目的地以及手机漫游，并保存在 DSH 的设置文档中。该设置只改变小船的航行速度，不改变水面、投影、Canvas 或 Session 语义。
+
+水面采用圆盘波光和透明水层。「水纹大小」默认 `90%`，支持 `50%`–`200%`，保存后立即生效。
 
 ## Installation / 安装
 
-准备环境：Node.js `>=20.19` 与 pnpm。直接把 GitHub Release 中的预构建包安装到 DSH 的 `web` profile：
+兼容目标：DSH `0.1.1-rc.2` web profile。准备 Node.js `>=20.19` 与 pnpm，并在独立的本地启动目录保存这两个配置文件：[package.json](https://github.com/Circleyan/whiteboat-dsh/blob/v0.2.0/docs/dsh-launcher/package.json) 和 [pnpm-workspace.yaml](https://github.com/Circleyan/whiteboat-dsh/blob/v0.2.0/docs/dsh-launcher/pnpm-workspace.yaml)。配置固定了该宿主所需的 Cordis 依赖；避免旧宿主自动取得不兼容的新依赖。然后在该目录运行：
 
 ```sh
-pnpm dlx @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web add https://github.com/Circleyan/whiteboat-dsh/releases/download/v0.1.3/whiteboat-dsh-0.1.3.tgz
+pnpm install
+pnpm exec dsh plugin --profile web add https://github.com/Circleyan/whiteboat-dsh/releases/download/v0.2.0/whiteboat-dsh-0.2.0.tgz
+pnpm exec dsh --profile web
 ```
 
-然后启动 DSH：
-
-```sh
-pnpm dlx @deepseek-ai/dsh@0.1.1-rc.2 --profile web
-```
-
-DSH 会打开浏览器；也可以按终端打印的本地地址手动访问。若已经全局安装同版本 DSH，可把上面命令中的 `pnpm dlx @deepseek-ai/dsh@0.1.1-rc.2` 替换为 `dsh`。
+DSH 会打开浏览器；也可以按终端打印的本地地址手动访问。已有数据保留在所选 DSH profile 中。
 
 ### 更新
 
@@ -39,12 +37,16 @@ DSH 会打开浏览器；也可以按终端打印的本地地址手动访问。�
 卸载时运行：
 
 ```sh
-pnpm dlx @deepseek-ai/dsh@0.1.1-rc.2 plugin --profile web remove whiteboat-dsh
+pnpm exec dsh plugin --profile web remove whiteboat-dsh
 ```
 
 ## Mobile input
 
 The DSH water surface provides text input on mobile. It does not render a microphone control, request microphone permission, or call browser speech-recognition APIs. Features exposed by a user's operating-system keyboard are controlled by the operating system and browser, not by this package, and are not part of the DSH capability contract.
+
+## DSH 0.1.1-rc.2 dependency compatibility
+
+The old DSH release currently resolves newer Cordis packages that cannot mount its standard preset. Create a separate local launcher folder and use the checked configuration in [docs/dsh-launcher/package.json](docs/dsh-launcher/package.json) and [docs/dsh-launcher/pnpm-workspace.yaml](docs/dsh-launcher/pnpm-workspace.yaml). Run `pnpm install`, then `pnpm exec dsh plugin --profile web add https://github.com/Circleyan/whiteboat-dsh/releases/download/v0.2.0/whiteboat-dsh-0.2.0.tgz` and `pnpm exec dsh --profile web`. Existing DSH data stays in its selected profile. These files pin host dependencies; they do not alter DSH source.
 
 ## Development
 
